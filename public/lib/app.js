@@ -460,15 +460,23 @@
         revealSuccess(body.code);
         return;
       }
-      let msg = tr('err-network');
+      // Known error codes get clean translated messages; everything else
+      // shows the HTTP status + a 120-char body preview so the user can
+      // tell us exactly what went wrong (502 from nginx? 200 with weird
+      // body from a buggy intermediate? etc).
+      let msg;
       if      (body && body.error === 'storage_full')      msg = tr('err-storage-full');
       else if (body && body.error === 'file_too_large')    msg = tr('err-file-too-large',   { gb: (body.max_bytes / 1073741824).toFixed(0) });
       else if (body && body.error === 'parcel_too_large')  msg = tr('err-parcel-too-large', { gb: (body.max_bytes / 1073741824).toFixed(0) });
+      else {
+        const preview = (xhr.responseText || '').slice(0, 120).replace(/\s+/g, ' ');
+        msg = `${tr('err-network')} [HTTP ${xhr.status}${preview ? ' · ' + preview : ''}]`;
+      }
       goBackToPickWithError(msg);
     });
     xhr.addEventListener('error', () => {
       send.xhr = null;
-      if (!send.cancelled) goBackToPickWithError(tr('err-network'));
+      if (!send.cancelled) goBackToPickWithError(`${tr('err-network')} [transport · status=${xhr.status} readyState=${xhr.readyState}]`);
     });
     xhr.addEventListener('abort', () => { send.xhr = null; });
 
@@ -638,6 +646,9 @@
     codeError.hidden = true;
     const password = receivePasswordInput.value.trim();
 
+    // Only /info here — does NOT decrement downloads_left. The /claim call
+    // (which decrements) is deferred until the user actually clicks a
+    // download button, via ensureClaim() below.
     let infoRes;
     try {
       infoRes = await fetch('/api/parcel/' + code + '/info', {
@@ -658,24 +669,22 @@
       return;
     }
 
-    let claim;
-    try {
-      const r = await fetch('/api/parcel/' + code + '/claim', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
-      });
-      claim = await safeJson(r);
-      if (!r.ok) { showCodeError(mapParcelError(claim && claim.error)); return; }
-    } catch (_) { showCodeError(tr('err-network')); return; }
+    currentReceive = {
+      code,
+      password,                    // kept so ensureClaim() can re-submit it
+      files: body.files,
+      kind: body.kind || 'files',
+      token: null,                 // populated lazily on first download click
+    };
 
-    currentReceive = { code, token: claim.token, files: body.files, kind: body.kind || 'files' };
-
-    // If this is a text parcel, fetch its content and show in a dedicated modal
-    // instead of routing the user through the file-list download flow.
+    // Text parcels: the displayed content IS the "download", so for them
+    // we claim immediately. For file parcels we hold off until the user
+    // clicks a download button (see triggerDownload below).
     if (currentReceive.kind === 'text' && body.files.length === 1) {
+      const token = await ensureClaim();
+      if (!token) { showCodeError(tr('err-network')); return; }
       try {
-        const url = `/api/parcel/${code}/file/${body.files[0].id}?token=${encodeURIComponent(claim.token)}`;
+        const url = `/api/parcel/${code}/file/${body.files[0].id}?token=${encodeURIComponent(token)}`;
         const txt = await (await fetch(url)).text();
         showReceiveTextModal(txt);
         clearCodeInputs();
@@ -684,7 +693,7 @@
       } catch (_) { /* fall through to file-list view */ }
     }
 
-    receiveMeta.textContent = tr('remaining', { n: claim.downloads_left });
+    receiveMeta.textContent = tr('remaining', { n: body.downloads_left });
     receiveFileList.innerHTML = '';
     body.files.forEach((f) => {
       const row = document.createElement('div');
@@ -705,9 +714,38 @@
     showStage('receive', 'list');
   }
 
-  function triggerDownload(f) {
+  // Lazy claim: idempotent within a single receive session. The first call
+  // hits /api/parcel/:code/claim (decrementing the counter once), subsequent
+  // calls return the cached token so clicking multiple file downloads — or
+  // the "下载全部" button — still only counts as ONE download.
+  async function ensureClaim() {
+    if (!currentReceive) return null;
+    if (currentReceive.token) return currentReceive.token;
+    try {
+      const r = await fetch('/api/parcel/' + currentReceive.code + '/claim', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: currentReceive.password }),
+      });
+      const claim = await safeJson(r);
+      if (!r.ok) {
+        toast(mapParcelError(claim && claim.error));
+        return null;
+      }
+      currentReceive.token = claim.token;
+      receiveMeta.textContent = tr('remaining', { n: claim.downloads_left });
+      return claim.token;
+    } catch (_) {
+      toast(tr('err-network'));
+      return null;
+    }
+  }
+
+  async function triggerDownload(f) {
     if (!currentReceive) return;
-    const url = `/api/parcel/${currentReceive.code}/file/${f.id}?token=${encodeURIComponent(currentReceive.token)}`;
+    const token = await ensureClaim();
+    if (!token) return;
+    const url = `/api/parcel/${currentReceive.code}/file/${f.id}?token=${encodeURIComponent(token)}`;
     const a = document.createElement('a');
     a.href = url;
     a.download = f.name;

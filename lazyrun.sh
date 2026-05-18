@@ -134,16 +134,15 @@ if [[ "$CONFIG_BBR" =~ ^[Yy]$ ]]; then
 fi
 
 echo -e "\n\033[33m-------------------------------------------------------\033[0m"
-read -p "是否现在配置域名反向代理和 HTTPS? (y/n): " CONFIG_DOMAIN
-if [[ "$CONFIG_DOMAIN" =~ ^[Yy]$ ]]; then
-    read -p "请输入域名（例如 drop.example.com）: " DOMAIN
-    read -p "请输入联系邮箱（用于申请 SSL 证书）: " EMAIL
-
-    echo "正在配置 Nginx (client_max_body_size 5GB，关闭代理缓冲以避免大文件白屏)..."
-    cat << EOF > /etc/nginx/sites-available/opendrop
+echo -e "\033[32m正在写入 Nginx 反代配置（无条件，保证大文件上传可用）...\033[0m"
+# 这一步无条件执行：even if the operator skips the HTTPS prompt below, the
+# upload-friendly buffer/body-size settings must be in place. Otherwise
+# nginx falls back to defaults (client_max_body_size 1m) and uploads stall
+# around 1 MB — bitten once already, never again.
+cat << EOF > /etc/nginx/sites-available/opendrop
 server {
     listen 80;
-    server_name $DOMAIN;
+    server_name _;     # catch-all; replaced with the real domain when HTTPS is enabled below
 
     # open.drop 单次上传上限是 5 GB，nginx 必须放行同样大小
     client_max_body_size      5G;
@@ -168,9 +167,23 @@ server {
     }
 }
 EOF
+ln -sf /etc/nginx/sites-available/opendrop /etc/nginx/sites-enabled/
+rm -f /etc/nginx/sites-enabled/default
+if nginx -t 2>&1; then
+    systemctl reload nginx
+    echo -e "\033[32m[OK] Nginx 反代已生效。\033[0m"
+else
+    echo -e "\033[31m[警告] Nginx 配置测试失败，请手动检查 /etc/nginx/sites-available/opendrop\033[0m"
+fi
 
-    ln -sf /etc/nginx/sites-available/opendrop /etc/nginx/sites-enabled/
-    rm -f /etc/nginx/sites-enabled/default
+echo -e "\n\033[33m-------------------------------------------------------\033[0m"
+read -p "是否现在配置域名 + HTTPS 证书? (y/n): " CONFIG_DOMAIN
+if [[ "$CONFIG_DOMAIN" =~ ^[Yy]$ ]]; then
+    read -p "请输入域名（例如 drop.example.com）: " DOMAIN
+    read -p "请输入联系邮箱（用于申请 SSL 证书）: " EMAIL
+
+    # 把刚写入配置里的 server_name _; 换成真实域名，让 certbot 能识别
+    sed -i "s/server_name _;/server_name $DOMAIN;/" /etc/nginx/sites-available/opendrop
     nginx -t && systemctl reload nginx
 
     echo "正在申请 SSL 证书 (Certbot)..."
@@ -187,7 +200,8 @@ EOF
         echo "  3. 重新执行: sudo certbot --nginx -d $DOMAIN"
     fi
 else
-    echo -e "\n\033[33m跳过域名配置。请通过 http://<server-ip>:$APP_PORT 访问。\033[0m"
+    echo -e "\n\033[33m跳过 HTTPS。当前可通过 http://<server-ip> 直接访问（nginx 已配好）。\033[0m"
+    echo -e "\033[33m稍后想加 HTTPS：sudo certbot --nginx -d your.domain.com\033[0m"
 fi
 
 echo -e "\n\033[32m部署完成。常用命令：\033[0m"
