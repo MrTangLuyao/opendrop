@@ -303,20 +303,28 @@ const checkUploadLimits = (req, res, next) => {
     });
   }
   
-  // Pre-assign code so multer's destination doesn't have to guess or race
   if (!req._parcelCode) {
     try {
       req._parcelCode = newPickupCode();
       const dir = path.join(UPLOADS_DIR, req._parcelCode);
       fs.mkdirSync(dir, { recursive: true });
     } catch (e) {
+      console.error('[upload] setup failed:', e);
       return res.status(500).json({ error: 'setup_failed' });
     }
   }
+
+  // NB: do NOT attach a `req.on('data', ...)` listener here. Doing so flips
+  // the IncomingMessage stream into flowing mode BEFORE multer pipes it to
+  // busboy in the next middleware. That breaks busboy's backpressure
+  // handshake — the TCP receive window drains to ~1.4 MB and then the
+  // socket stalls because the consumer never asserts ready-for-more.
+
   next();
 };
 
 app.post('/api/upload', checkUploadLimits, upload.array('files'), async (req, res) => {
+  console.log('[Upload] Multer finished processing files.');
   try {
     const dynMaxUpload  = maxUploadBytes();
     const dynMaxStorage = maxStorageBytes();

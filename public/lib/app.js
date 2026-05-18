@@ -440,13 +440,38 @@
     send.xhr = xhr;
     xhr.open('POST', '/api/upload', true);
     xhr.withCredentials = true;
+xhr.upload.addEventListener('progress', (e) => {
+  if (!e.lengthComputable) return;
+  const p = e.loaded / e.total;
+  uploadPct.textContent = Math.floor(p * 100);
+  uploadBar.style.width = (p * 100).toFixed(1) + '%';
+  uploadBytes.textContent = `${fmtBytes(e.loaded)} / ${fmtBytes(e.total)}`;
+});
 
-    xhr.upload.addEventListener('progress', (e) => {
-      if (!e.lengthComputable) return;
-      const p = e.loaded / e.total;
-      uploadPct.textContent = Math.floor(p * 100);
-      uploadBar.style.width = (p * 100).toFixed(1) + '%';
-      uploadBytes.textContent = `${fmtBytes(e.loaded)} / ${fmtBytes(e.total)}`;
+xhr.addEventListener('error', (e) => {
+  console.error('xhr error:', e);
+  send.xhr = null;
+  if (!send.cancelled) showUploadError('网络连接中断 (如果是 1MB 左右卡死，100% 是你配置的反向代理/Nginx 限制了 client_max_body_size)');
+});
+
+xhr.addEventListener('abort', () => {
+  send.xhr = null;
+});
+
+xhr.addEventListener('load', () => {
+    xhr.upload.addEventListener('error', (e) => console.error('xhr.upload error:', e));
+    xhr.upload.addEventListener('abort', (e) => console.warn('xhr.upload abort:', e));
+    xhr.upload.addEventListener('timeout', (e) => console.warn('xhr.upload timeout:', e));
+
+    xhr.addEventListener('error', (e) => {
+      console.error('xhr error:', e);
+      send.xhr = null;
+      if (!send.cancelled) showUploadError('Network error or connection closed by server (check limits)');
+    });
+    
+    xhr.addEventListener('abort', () => {
+      console.warn('xhr abort');
+      send.xhr = null;
     });
 
     xhr.addEventListener('load', () => {
