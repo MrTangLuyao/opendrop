@@ -76,7 +76,13 @@
       'toast-renewed':   '已续期',
       'toast-saved':     '已保存',
       'toast-updated':   '已修改',
+      'toast-perm-on':   '已标记为长期账户',
+      'toast-perm-off':  '已取消长期标记',
       'h':               '小时',
+      'btn-mark-perm':   '标记长期',
+      'btn-unmark-perm': '取消长期',
+      'perm-badge':      '长期',
+      'cell-never-expires': '永不过期',
     },
     en: {
       'nav-back-to-app': 'Back to site',
@@ -145,7 +151,13 @@
       'toast-renewed':   'Renewed',
       'toast-saved':     'Saved',
       'toast-updated':   'Updated',
+      'toast-perm-on':   'Marked as long-term account',
+      'toast-perm-off':  'Long-term flag removed',
       'h':               'h',
+      'btn-mark-perm':   'Mark long-term',
+      'btn-unmark-perm': 'Unmark long-term',
+      'perm-badge':      'long-term',
+      'cell-never-expires': 'never expires',
     },
   };
 
@@ -206,6 +218,12 @@
     const existing = btn.querySelector('.ripple');
     if (existing) existing.remove();
     btn.appendChild(circle);
+    // Remove the span as soon as the animation finishes so a later
+    // display:none → block toggle on a parent doesn't replay the animation
+    // on a lingering ripple element.
+    const cleanup = () => { try { circle.remove(); } catch (_) {} };
+    circle.addEventListener('animationend', cleanup);
+    setTimeout(cleanup, 800);
   }
   function bindRipples() {
     document.querySelectorAll('.ripple-surface').forEach(el => {
@@ -363,15 +381,27 @@
       const now = Date.now();
       for (const a of accounts) {
         const expSoon = a.expires_at < now;
+        const isPerm  = !!a.is_perm;
         const row = document.createElement('tr');
+        // Long-term accounts: badge after the username, "永不过期" instead of the
+        // date, no 续期 button (it just gets refused server-side anyway).
+        const usernameCell = `${escapeText(a.username)}${isPerm ? ` <span class="perm-badge">${tr('perm-badge')}</span>` : ''}`;
+        const expiryCell   = isPerm
+          ? `<span class="never-expires">${tr('cell-never-expires')}</span>`
+          : `<span class="${expSoon ? 'expired' : ''}">${fmtDate(a.expires_at)}</span>`;
+        const renewBtn = isPerm
+          ? ''
+          : `<button class="row-action ripple-surface" data-action="renew" data-id="${a.id}">${tr('btn-renew')}</button>`;
+        const permBtn = `<button class="row-action ripple-surface" data-action="toggle-perm" data-id="${a.id}">${isPerm ? tr('btn-unmark-perm') : tr('btn-mark-perm')}</button>`;
         row.innerHTML = `
           <td class="mono">#${a.id}</td>
-          <td>${escapeText(a.username)}</td>
+          <td>${usernameCell}</td>
           <td>${a.parcel_count}</td>
           <td>${fmtBytes(a.storage_used)}</td>
-          <td class="${expSoon ? 'expired' : ''}">${fmtDate(a.expires_at)}</td>
+          <td>${expiryCell}</td>
           <td>
-            <button class="row-action ripple-surface" data-action="renew" data-id="${a.id}">${tr('btn-renew')}</button>
+            ${renewBtn}
+            ${permBtn}
             <button class="row-action danger ripple-surface" data-action="delete" data-id="${a.id}">${tr('btn-delete')}</button>
           </td>`;
         tbody.appendChild(row);
@@ -382,6 +412,10 @@
           if (btn.dataset.action === 'renew') {
             const r = await fetch(`/api/admin/accounts/${id}/renew`, { method: 'POST', credentials: 'same-origin' });
             if (r.ok) { toast(tr('toast-renewed')); loadAccounts(); }
+          } else if (btn.dataset.action === 'toggle-perm') {
+            const r = await fetch(`/api/admin/accounts/${id}/toggle-perm`, { method: 'POST', credentials: 'same-origin' });
+            const body = await r.json().catch(() => ({}));
+            if (r.ok) { toast(body.is_perm ? tr('toast-perm-on') : tr('toast-perm-off')); loadAccounts(); }
           } else if (btn.dataset.action === 'delete') {
             if (!confirm(tr('confirm-del-account', { id }))) return;
             const r = await fetch(`/api/admin/accounts/${id}`, { method: 'DELETE', credentials: 'same-origin' });

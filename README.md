@@ -36,6 +36,19 @@ sudo bash lazyrun.sh
 6. 询问是否配置域名反向代理 + 自动申请 SSL 证书（Nginx 已经把 `client_max_body_size` 调到 5 GB，避免大文件 413）
 7. 安装 CLI 工具 `opendrop`
 
+## 管理后台
+
+部署完成后访问 `https://your.host/admin`，默认账号 / 密码均为 `admin`，**首次登录后请立即在「修改密码」面板里改掉**。
+
+后台功能：
+
+- 查看所有包裹 / 账户，删除任意包裹
+- 删除 / 续期 / 标记任意用户账户为「长期账户」（永不过期、看不到续期按钮）
+- 在线修改限额：系统总存储、单次上传、最长有效期 — 不需要重启
+- 修改管理员自己的用户名 / 密码
+
+管理员账户本身永远不过期，不需要也不能续期。
+
 ## 管理命令
 
 部署完成后，全局命令 `opendrop` 即可管理服务：
@@ -111,6 +124,19 @@ The script will:
 5. Optionally enable BBR for TCP throughput
 6. Optionally configure an Nginx reverse proxy and request an SSL cert with certbot (`client_max_body_size` is set to 5 GB so large uploads don't hit a 413)
 7. Install the `opendrop` CLI
+
+## Admin panel
+
+Once deployed, visit `https://your.host/admin`. Default credentials are `admin` / `admin` — **change them via the **Change password** panel on first sign-in**.
+
+From the admin panel you can:
+
+- Inspect every parcel and user account, delete any parcel
+- Delete / renew / mark any user account as **long-term** (never expires, the renew button is hidden for that user)
+- Edit limits live — total system storage, per-upload cap, max expiry hours — no restart needed
+- Change the admin's own username / password
+
+The admin account itself never expires; you can't and don't need to renew it.
 
 ## CLI
 

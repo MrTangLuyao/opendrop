@@ -87,6 +87,9 @@
       'btn-delete-parcel': '删除',
       'storage-tip': '系统总存储 {used} / {max}',
       'account-expires': '账户有效期至 {date}',
+      'account-never-expires': '管理员账户 · 永不过期',
+      'account-perm-never-expires': '长期账户 · 永不过期',
+      'admin-console': '进入控制台',
     },
     en: {
       'brand-sub': 'Temporary file drop',
@@ -159,6 +162,9 @@
       'btn-delete-parcel': 'Delete',
       'storage-tip': 'System storage {used} / {max}',
       'account-expires': 'Account valid until {date}',
+      'account-never-expires': 'Admin account · never expires',
+      'account-perm-never-expires': 'Long-term account · never expires',
+      'admin-console': 'Open admin panel',
     },
   };
 
@@ -275,7 +281,23 @@
       const want = el.dataset.when;
       el.hidden = (want === 'signed-in' && !me) || (want === 'signed-out' && me);
     });
+    // Hide 续期账户 for accounts that never expire (admin OR is_perm).
+    const renewBtn = document.querySelector('#nav-menu [data-action="renew"]');
+    if (renewBtn) renewBtn.hidden = !me || !!me.is_admin || !!me.is_perm;
+    // Admin sees "进入控制台" instead of "我的文件" in both the quick link and menu.
+    const myFilesText = (me && me.is_admin) ? tr('admin-console') : tr('menu-my-files');
+    const quickLabel = document.querySelector('#my-files-link span');
+    const menuLabel  = document.querySelector('#nav-menu [data-action="my-files"] span');
+    if (quickLabel) quickLabel.textContent = myFilesText;
+    if (menuLabel)  menuLabel.textContent  = myFilesText;
     refreshMenuMeta();
+  }
+
+  function neverExpiresLabel() {
+    if (!me) return '';
+    if (me.is_admin) return tr('account-never-expires');
+    if (me.is_perm)  return tr('account-perm-never-expires');
+    return '';
   }
 
   function refreshMenuMeta() {
@@ -283,7 +305,12 @@
     if (!meta) return;
     const parts = [];
     if (storageInfo) parts.push(`${fmtBytes(storageInfo.used_bytes)} / ${fmtBytes(storageInfo.max_bytes)}`);
-    if (me) parts.push(tr('account-expires', { date: fmtDate(me.account_expires_at) }));
+    if (me) {
+      parts.push(
+        (me.is_admin || me.is_perm)
+          ? neverExpiresLabel()
+          : tr('account-expires', { date: fmtDate(me.account_expires_at) }));
+    }
     meta.textContent = parts.join(' · ') || '—';
   }
 
@@ -807,6 +834,7 @@
         break;
       case 'my-files':
         toggleNavMenu(false);
+        if (me && me.is_admin) { window.location.href = '/admin'; break; }
         if (me) {
           loadMyFiles();
         } else {
@@ -891,9 +919,12 @@
     if (!e.target.closest('#menu-btn') && !e.target.closest('#nav-menu')) toggleNavMenu(false);
   });
 
-  // "我的文件" — always visible. If not signed in, force login first and then
-  // auto-jump to the my-files view once the login resolves successfully.
+  // "我的文件" — always visible. Behavior splits on auth state:
+  //   admin    → /admin (the button reads "进入控制台")
+  //   signed-in user → loadMyFiles()
+  //   anonymous → open login modal, auto-jump after login
   document.getElementById('my-files-link').addEventListener('click', () => {
+    if (me && me.is_admin) { window.location.href = '/admin'; return; }
     if (me) {
       loadMyFiles();
     } else {
@@ -976,7 +1007,11 @@
   function renderMyFiles(parcels) {
     const list = document.getElementById('my-files-list');
     const meta = document.getElementById('my-files-meta');
-    const expiresLine = me ? tr('account-expires', { date: fmtDate(me.account_expires_at) }) : '';
+    const expiresLine = me
+      ? ((me.is_admin || me.is_perm)
+          ? neverExpiresLabel()
+          : tr('account-expires', { date: fmtDate(me.account_expires_at) }))
+      : '';
     if (parcels.length === 0) {
       meta.textContent = tr('my-files-empty') + (expiresLine ? ' · ' + expiresLine : '');
       list.innerHTML = '';
@@ -1036,6 +1071,14 @@
     const existing = btn.querySelector('.ripple');
     if (existing) existing.remove();
     btn.appendChild(circle);
+    // Remove the span once the animation finishes so a later `display:none → block`
+    // toggle on a parent (e.g. closing then re-opening the hamburger menu) doesn't
+    // re-trigger the CSS animation on a lingering ripple. animationend fires when
+    // the parent is visible; the setTimeout is the safety net for the case where
+    // the parent got hidden mid-animation.
+    const cleanup = () => { try { circle.remove(); } catch (_) {} };
+    circle.addEventListener('animationend', cleanup);
+    setTimeout(cleanup, 800);
   }
   function bindRipples() {
     document.querySelectorAll('.ripple-surface').forEach(el => {

@@ -1206,6 +1206,22 @@ footer {
   border-color: rgba(255, 138, 118, 0.40);
 }
 
+/* Long-term account badge + "never expires" cell */
+.perm-badge {
+  display: inline-block;
+  padding: 1px 7px;
+  margin-left: 6px;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-on);
+  background: var(--accent-dim);
+  border: 1px solid rgba(217, 119, 87, 0.35);
+  border-radius: var(--radius-full);
+  vertical-align: middle;
+}
+.never-expires { color: var(--accent-on); font-style: italic; }
+
 /* ============================================================
  * Small-screen polish
  * ============================================================ */

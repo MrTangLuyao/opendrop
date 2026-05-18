@@ -142,7 +142,7 @@ class Store {
   /* ─── Accounts ─── */
   accountByUsername(u)      { return this.data.accounts.find(a => a.username === u) || null; }
   accountById(id)           { return this.data.accounts.find(a => a.id === id) || null; }
-  expiredAccounts(now)      { return this.data.accounts.filter(a => !a.is_admin && a.expires_at < now); }
+  expiredAccounts(now)      { return this.data.accounts.filter(a => !a.is_admin && !a.is_perm && a.expires_at < now); }
   insertAccount(rec) {
     const a = Object.assign({ id: this.data.nextAccountId++ }, rec);
     this.data.accounts.push(a);

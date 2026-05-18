@@ -66,15 +66,24 @@ const store = new Store(DATA_DIR);
 // Bootstrap a default admin account if none exists. Username/password are
 // both "admin" on first run — admin should change them via /admin → 改密.
 // Admin accounts have is_admin=1 and never expire (sweeper skips them).
+//
+// Self-healing: an earlier bug let /api/auth/renew shorten an admin's
+// expires_at to "now + 7 d". On every restart we restore any admin whose
+// expires_at is sooner than ~99 years out, so any corrupted DB self-heals
+// on the next boot.
 (function bootstrapAdmin() {
+  const FAR_FUTURE = Date.now() + 100 * 365 * 24 * 3600 * 1000;
   const existing = store.allAccounts().find(a => a.is_admin);
-  if (existing) return;
-  // bcryptjs.hashSync is fine here; this runs once at startup.
+  if (existing) {
+    if (existing.expires_at < FAR_FUTURE - 365 * 24 * 3600 * 1000) {
+      store.renewAccount(existing.id, FAR_FUTURE);
+      store.saveSync();        // flush immediately — don't rely on the 80 ms debounce
+      console.log('[bootstrap] admin expires_at restored to far future');
+    }
+    return;
+  }
   const hash = bcrypt.hashSync('admin', 10);
   const now  = Date.now();
-  // expires_at far future so the sweep never touches it; the is_admin filter
-  // already protects them, but a sane number is good belt-and-braces.
-  const FAR_FUTURE = now + 100 * 365 * 24 * 3600 * 1000;
   store.insertAccount({
     username:      'admin',
     password_hash: hash,
@@ -263,12 +272,23 @@ app.post('/api/auth/logout', (req, res) => {
 app.get('/api/auth/me', (req, res) => {
   const s = currentSession(req);
   if (!s) return res.status(401).json({ error: 'not signed in' });
-  res.json({ username: s.username, account_expires_at: s.account_expires_at });
+  const a = store.accountById(s.account_id);
+  res.json({
+    username:           s.username,
+    account_expires_at: s.account_expires_at,
+    is_admin:           !!(a && a.is_admin),
+    is_perm:            !!(a && a.is_perm),
+  });
 });
 
 app.post('/api/auth/renew', (req, res) => {
   const s = currentSession(req);
   if (!s) return res.status(401).json({ error: 'not signed in' });
+  // Accounts that never expire (admin OR admin-flagged 长期账户) reject renewal.
+  const a = store.accountById(s.account_id);
+  if (a && a.is_admin) return res.status(400).json({ error: 'admin_never_expires' });
+  if (a && a.is_perm)  return res.status(400).json({ error: 'perm_never_expires' });
+
   const exp = Date.now() + SEVEN_DAYS_MS;
   store.renewAccount(s.account_id, exp);
   res.json({ account_expires_at: exp });
@@ -561,11 +581,24 @@ app.get('/api/admin/accounts', requireAdmin, (req, res) => {
         username:     a.username,
         created_at:   a.created_at,
         expires_at:   a.expires_at,
+        is_perm:      !!a.is_perm,
         parcel_count: ps.length,
         storage_used: ps.reduce((s, p) => s + p.total_bytes, 0),
       };
     });
   res.json({ accounts });
+});
+
+app.post('/api/admin/accounts/:id/toggle-perm', requireAdmin, (req, res) => {
+  // Flip the long-term flag for a given user account. Long-term accounts
+  // skip the sweep and refuse renewal — same protections admin gets.
+  const id = parseInt(req.params.id, 10);
+  const a = store.accountById(id);
+  if (!a)         return res.status(404).json({ error: 'not_found' });
+  if (a.is_admin) return res.status(400).json({ error: 'admin_already_perm' });
+  a.is_perm = !a.is_perm;
+  store.saveSync();
+  res.json({ is_perm: !!a.is_perm });
 });
 
 app.delete('/api/admin/accounts/:id', requireAdmin, (req, res) => {
