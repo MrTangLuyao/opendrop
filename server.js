@@ -169,18 +169,11 @@ setInterval(sweep, 60 * 60 * 1000);  // hourly
 /* ─── Multer disk storage with per-request code folder ─ */
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    if (!req._parcelCode) {
-      req._parcelCode = newPickupCode();
-    }
-    const dir = path.join(UPLOADS_DIR, req._parcelCode);
-    fs.mkdirSync(dir, { recursive: true });
+    // req._parcelCode is pre-assigned by checkUploadLimits middleware
+    const dir = path.join(UPLOADS_DIR, req._parcelCode || 'unknown');
     cb(null, dir);
   },
   filename: (req, file, cb) => {
-    // Normalize latin-1 → utf-8 (multer default mangles non-ASCII names)
-    try {
-      file.originalname = Buffer.from(file.originalname, 'latin1').toString('utf8');
-    } catch (_) {}
     const safe = file.originalname.replace(/[\\/:*?"<>|]/g, '_').slice(0, 200);
     const id = crypto.randomBytes(6).toString('hex');
     cb(null, `${id}__${safe}`);
@@ -290,21 +283,18 @@ app.post('/api/auth/renew', (req, res) => {
 });
 
 /* ─── Upload ──────────────────────────────────────────── */
-app.post('/api/upload', (req, res) => {
+const checkUploadLimits = (req, res, next) => {
   const claimed       = parseInt(req.headers['content-length'] || '0', 10);
   const used          = store.countParcelBytes();
   const dynMaxUpload  = maxUploadBytes();
   const dynMaxStorage = maxStorageBytes();
 
   if (claimed > 0 && claimed > dynMaxUpload + 256 * 1024) {
-    // Reject oversize uploads BEFORE bytes hit the wire. The 256 KB padding
-    // covers multipart-framing overhead so legit edge-case uploads aren't
-    // misclassified.
-    req.resume(); // Drain stream to avoid hangs
+    req.resume();
     return res.status(413).json({ error: 'parcel_too_large', max_bytes: dynMaxUpload });
   }
   if (claimed > 0 && used + claimed > dynMaxStorage) {
-    req.resume(); // Drain stream to avoid hangs
+    req.resume();
     return res.status(507).json({
       error: 'storage_full',
       used_bytes: used,
@@ -312,93 +302,87 @@ app.post('/api/upload', (req, res) => {
       attempted:  claimed,
     });
   }
-
-  // Pre-generate code and directory BEFORE starting the multipart stream
-  // This reduces blocking logic during the actual data transfer.
-  try {
-    if (!req._parcelCode) {
+  
+  // Pre-assign code so multer's destination doesn't have to guess or race
+  if (!req._parcelCode) {
+    try {
       req._parcelCode = newPickupCode();
       const dir = path.join(UPLOADS_DIR, req._parcelCode);
       fs.mkdirSync(dir, { recursive: true });
+    } catch (e) {
+      return res.status(500).json({ error: 'setup_failed' });
     }
-  } catch (e) {
-    return res.status(500).json({ error: 'setup_failed', detail: e.message });
   }
+  next();
+};
 
-  upload.array('files')(req, res, async (err) => {
-    try {
-      if (err) {
-        cleanupRequestUploads(req);
-        if (err.code === 'LIMIT_FILE_SIZE') {
-          return res.status(413).json({ error: 'file_too_large', max_bytes: dynMaxUpload });
-        }
-        return res.status(400).json({ error: 'upload_failed', detail: err.message });
-      }
+app.post('/api/upload', checkUploadLimits, upload.array('files'), async (req, res) => {
+  try {
+    const dynMaxUpload  = maxUploadBytes();
+    const dynMaxStorage = maxStorageBytes();
+    const files = req.files || [];
+    if (files.length === 0) return res.status(400).json({ error: 'no_files' });
 
-      const files = req.files || [];
-      if (files.length === 0) return res.status(400).json({ error: 'no_files' });
-
-      const totalBytes = files.reduce((s, f) => s + f.size, 0);
-      if (totalBytes > dynMaxUpload) {
-        cleanupRequestUploads(req);
-        return res.status(413).json({ error: 'parcel_too_large', max_bytes: dynMaxUpload });
-      }
-
-      const usedNow = store.countParcelBytes();
-      if (usedNow + totalBytes > dynMaxStorage) {
-        cleanupRequestUploads(req);
-        return res.status(507).json({
-          error: 'storage_full',
-          used_bytes: usedNow,
-          max_bytes:  dynMaxStorage,
-          attempted:  totalBytes,
-        });
-      }
-
-      const password  = (req.body.password || '').trim();
-      const downloads = clamp(parseInt(req.body.downloads || '2', 10), 1, 999);
-      const expiryHrs = clamp(parseInt(req.body.expiry_hours || '24', 10), 1, maxExpiryHours());
-      const kind      = req.body.kind === 'text' ? 'text' : 'files';
-      const code      = req._parcelCode;
-      const now       = Date.now();
-      const expiresAt = now + expiryHrs * 3600 * 1000;
-      const passHash  = password ? await bcrypt.hash(password, 10) : '';
-      const session   = currentSession(req);
-      const accountId = session ? session.account_id : null;
-
-      store.insertParcel({
-        code,
-        account_id:     accountId,
-        password_hash:  passHash,
-        downloads_left: downloads,
-        total_bytes:    totalBytes,
-        expires_at:     expiresAt,
-        created_at:     now,
-        kind,
-        files: files.map(f => ({
-          name: f.originalname,
-          mime: f.mimetype || 'application/octet-stream',
-          size: f.size,
-          path: f.path,
-        })),
-      });
-
-      res.json({
-        code,
-        expires_at: expiresAt,
-        downloads_left: downloads,
-        total_bytes: totalBytes,
-        file_count: files.length,
-        kind,
-      });
-    } catch (unexpected) {
-      console.error('[upload] unexpected error:', unexpected);
+    const totalBytes = files.reduce((s, f) => s + f.size, 0);
+    if (totalBytes > dynMaxUpload) {
       cleanupRequestUploads(req);
-      if (!res.headersSent) {
-        res.status(500).json({ error: 'internal_error' });
-      }
+      return res.status(413).json({ error: 'parcel_too_large', max_bytes: dynMaxUpload });
     }
-  });
+
+    const usedNow = store.countParcelBytes();
+    if (usedNow + totalBytes > dynMaxStorage) {
+      cleanupRequestUploads(req);
+      return res.status(507).json({
+        error: 'storage_full',
+        used_bytes: usedNow,
+        max_bytes:  dynMaxStorage,
+        attempted:  totalBytes,
+      });
+    }
+
+    const password  = (req.body.password || '').trim();
+    const downloads = clamp(parseInt(req.body.downloads || '2', 10), 1, 999);
+    const expiryHrs = clamp(parseInt(req.body.expiry_hours || '24', 10), 1, maxExpiryHours());
+    const kind      = req.body.kind === 'text' ? 'text' : 'files';
+    const code      = req._parcelCode;
+    const now       = Date.now();
+    const expiresAt = now + expiryHrs * 3600 * 1000;
+    const passHash  = password ? await bcrypt.hash(password, 10) : '';
+    const session   = currentSession(req);
+    const accountId = session ? session.account_id : null;
+
+    store.insertParcel({
+      code,
+      account_id:     accountId,
+      password_hash:  passHash,
+      downloads_left: downloads,
+      total_bytes:    totalBytes,
+      expires_at:     expiresAt,
+      created_at:     now,
+      kind,
+      files: files.map(f => ({
+        name: f.originalname,
+        mime: f.mimetype || 'application/octet-stream',
+        size: f.size,
+        path: f.path,
+      })),
+    });
+
+    res.json({
+      code,
+      expires_at: expiresAt,
+      downloads_left: downloads,
+      total_bytes: totalBytes,
+      file_count: files.length,
+      kind,
+    });
+  } catch (unexpected) {
+    console.error('[upload] unexpected error:', unexpected);
+    cleanupRequestUploads(req);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'internal_error' });
+    }
+  }
 });
 
 function cleanupRequestUploads(req) {
