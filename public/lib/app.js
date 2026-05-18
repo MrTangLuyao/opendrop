@@ -440,38 +440,13 @@
     send.xhr = xhr;
     xhr.open('POST', '/api/upload', true);
     xhr.withCredentials = true;
-xhr.upload.addEventListener('progress', (e) => {
-  if (!e.lengthComputable) return;
-  const p = e.loaded / e.total;
-  uploadPct.textContent = Math.floor(p * 100);
-  uploadBar.style.width = (p * 100).toFixed(1) + '%';
-  uploadBytes.textContent = `${fmtBytes(e.loaded)} / ${fmtBytes(e.total)}`;
-});
 
-xhr.addEventListener('error', (e) => {
-  console.error('xhr error:', e);
-  send.xhr = null;
-  if (!send.cancelled) showUploadError('网络连接中断 (如果是 1MB 左右卡死，100% 是你配置的反向代理/Nginx 限制了 client_max_body_size)');
-});
-
-xhr.addEventListener('abort', () => {
-  send.xhr = null;
-});
-
-xhr.addEventListener('load', () => {
-    xhr.upload.addEventListener('error', (e) => console.error('xhr.upload error:', e));
-    xhr.upload.addEventListener('abort', (e) => console.warn('xhr.upload abort:', e));
-    xhr.upload.addEventListener('timeout', (e) => console.warn('xhr.upload timeout:', e));
-
-    xhr.addEventListener('error', (e) => {
-      console.error('xhr error:', e);
-      send.xhr = null;
-      if (!send.cancelled) showUploadError('Network error or connection closed by server (check limits)');
-    });
-    
-    xhr.addEventListener('abort', () => {
-      console.warn('xhr abort');
-      send.xhr = null;
+    xhr.upload.addEventListener('progress', (e) => {
+      if (!e.lengthComputable) return;
+      const p = e.loaded / e.total;
+      uploadPct.textContent = Math.floor(p * 100);
+      uploadBar.style.width = (p * 100).toFixed(1) + '%';
+      uploadBytes.textContent = `${fmtBytes(e.loaded)} / ${fmtBytes(e.total)}`;
     });
 
     xhr.addEventListener('load', () => {
@@ -486,12 +461,15 @@ xhr.addEventListener('load', () => {
         return;
       }
       let msg = tr('err-network');
-      if (body && body.error === 'storage_full')         msg = tr('err-storage-full');
-      else if (body && body.error === 'file_too_large')   msg = tr('err-file-too-large',   { gb: (body.max_bytes / 1073741824).toFixed(0) });
-      else if (body && body.error === 'parcel_too_large') msg = tr('err-parcel-too-large', { gb: (body.max_bytes / 1073741824).toFixed(0) });
+      if      (body && body.error === 'storage_full')      msg = tr('err-storage-full');
+      else if (body && body.error === 'file_too_large')    msg = tr('err-file-too-large',   { gb: (body.max_bytes / 1073741824).toFixed(0) });
+      else if (body && body.error === 'parcel_too_large')  msg = tr('err-parcel-too-large', { gb: (body.max_bytes / 1073741824).toFixed(0) });
       goBackToPickWithError(msg);
     });
-    xhr.addEventListener('error', () => { send.xhr = null; goBackToPickWithError(tr('err-network')); });
+    xhr.addEventListener('error', () => {
+      send.xhr = null;
+      if (!send.cancelled) goBackToPickWithError(tr('err-network'));
+    });
     xhr.addEventListener('abort', () => { send.xhr = null; });
 
     xhr.send(fd);
