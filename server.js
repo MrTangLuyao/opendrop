@@ -200,13 +200,8 @@ const upload = multer({
 const app = express();
 app.disable('x-powered-by');
 app.use(cookies());
-app.use(express.json({ limit: '64kb' }));
 
-// Static files. Caching disabled so deployments roll out immediately.
-app.use(express.static(path.join(__dirname, 'public'), {
-  etag: false,
-  setHeaders: (res) => res.setHeader('Cache-Control', 'no-store'),
-}));
+const json64 = express.json({ limit: '64kb' });
 
 // Deep link: /d/CODE → SPA receive flow with the code prefilled.
 app.get(/^\/d\/(\d{6})$/, (req, res) => {
@@ -224,7 +219,7 @@ app.get('/api/storage', (req, res) => {
 });
 
 /* ─── Auth ────────────────────────────────────────────── */
-app.post('/api/auth/login', async (req, res) => {
+app.post('/api/auth/login', json64, async (req, res) => {
   const { username, password } = req.body || {};
   if (typeof username !== 'string' || typeof password !== 'string') {
     return res.status(400).json({ error: 'username and password required' });
@@ -305,9 +300,11 @@ app.post('/api/upload', (req, res) => {
     // Reject oversize uploads BEFORE bytes hit the wire. The 256 KB padding
     // covers multipart-framing overhead so legit edge-case uploads aren't
     // misclassified.
+    req.resume(); // Drain stream to avoid hangs
     return res.status(413).json({ error: 'parcel_too_large', max_bytes: dynMaxUpload });
   }
   if (claimed > 0 && used + claimed > dynMaxStorage) {
+    req.resume(); // Drain stream to avoid hangs
     return res.status(507).json({
       error: 'storage_full',
       used_bytes: used,
@@ -316,71 +313,91 @@ app.post('/api/upload', (req, res) => {
     });
   }
 
+  // Pre-generate code and directory BEFORE starting the multipart stream
+  // This reduces blocking logic during the actual data transfer.
+  try {
+    if (!req._parcelCode) {
+      req._parcelCode = newPickupCode();
+      const dir = path.join(UPLOADS_DIR, req._parcelCode);
+      fs.mkdirSync(dir, { recursive: true });
+    }
+  } catch (e) {
+    return res.status(500).json({ error: 'setup_failed', detail: e.message });
+  }
+
   upload.array('files')(req, res, async (err) => {
-    if (err) {
-      cleanupRequestUploads(req);
-      if (err.code === 'LIMIT_FILE_SIZE') {
-        return res.status(413).json({ error: 'file_too_large', max_bytes: dynMaxUpload });
+    try {
+      if (err) {
+        cleanupRequestUploads(req);
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          return res.status(413).json({ error: 'file_too_large', max_bytes: dynMaxUpload });
+        }
+        return res.status(400).json({ error: 'upload_failed', detail: err.message });
       }
-      return res.status(400).json({ error: 'upload_failed', detail: err.message });
-    }
 
-    const files = req.files || [];
-    if (files.length === 0) return res.status(400).json({ error: 'no_files' });
+      const files = req.files || [];
+      if (files.length === 0) return res.status(400).json({ error: 'no_files' });
 
-    const totalBytes = files.reduce((s, f) => s + f.size, 0);
-    if (totalBytes > dynMaxUpload) {
-      cleanupRequestUploads(req);
-      return res.status(413).json({ error: 'parcel_too_large', max_bytes: dynMaxUpload });
-    }
+      const totalBytes = files.reduce((s, f) => s + f.size, 0);
+      if (totalBytes > dynMaxUpload) {
+        cleanupRequestUploads(req);
+        return res.status(413).json({ error: 'parcel_too_large', max_bytes: dynMaxUpload });
+      }
 
-    const usedNow = store.countParcelBytes();
-    if (usedNow + totalBytes > dynMaxStorage) {
-      cleanupRequestUploads(req);
-      return res.status(507).json({
-        error: 'storage_full',
-        used_bytes: usedNow,
-        max_bytes:  dynMaxStorage,
-        attempted:  totalBytes,
+      const usedNow = store.countParcelBytes();
+      if (usedNow + totalBytes > dynMaxStorage) {
+        cleanupRequestUploads(req);
+        return res.status(507).json({
+          error: 'storage_full',
+          used_bytes: usedNow,
+          max_bytes:  dynMaxStorage,
+          attempted:  totalBytes,
+        });
+      }
+
+      const password  = (req.body.password || '').trim();
+      const downloads = clamp(parseInt(req.body.downloads || '2', 10), 1, 999);
+      const expiryHrs = clamp(parseInt(req.body.expiry_hours || '24', 10), 1, maxExpiryHours());
+      const kind      = req.body.kind === 'text' ? 'text' : 'files';
+      const code      = req._parcelCode;
+      const now       = Date.now();
+      const expiresAt = now + expiryHrs * 3600 * 1000;
+      const passHash  = password ? await bcrypt.hash(password, 10) : '';
+      const session   = currentSession(req);
+      const accountId = session ? session.account_id : null;
+
+      store.insertParcel({
+        code,
+        account_id:     accountId,
+        password_hash:  passHash,
+        downloads_left: downloads,
+        total_bytes:    totalBytes,
+        expires_at:     expiresAt,
+        created_at:     now,
+        kind,
+        files: files.map(f => ({
+          name: f.originalname,
+          mime: f.mimetype || 'application/octet-stream',
+          size: f.size,
+          path: f.path,
+        })),
       });
+
+      res.json({
+        code,
+        expires_at: expiresAt,
+        downloads_left: downloads,
+        total_bytes: totalBytes,
+        file_count: files.length,
+        kind,
+      });
+    } catch (unexpected) {
+      console.error('[upload] unexpected error:', unexpected);
+      cleanupRequestUploads(req);
+      if (!res.headersSent) {
+        res.status(500).json({ error: 'internal_error' });
+      }
     }
-
-    const password  = (req.body.password || '').trim();
-    const downloads = clamp(parseInt(req.body.downloads || '2', 10), 1, 999);
-    const expiryHrs = clamp(parseInt(req.body.expiry_hours || '24', 10), 1, maxExpiryHours());
-    const kind      = req.body.kind === 'text' ? 'text' : 'files';
-    const code      = req._parcelCode;
-    const now       = Date.now();
-    const expiresAt = now + expiryHrs * 3600 * 1000;
-    const passHash  = password ? await bcrypt.hash(password, 10) : '';
-    const session   = currentSession(req);
-    const accountId = session ? session.account_id : null;
-
-    store.insertParcel({
-      code,
-      account_id:     accountId,
-      password_hash:  passHash,
-      downloads_left: downloads,
-      total_bytes:    totalBytes,
-      expires_at:     expiresAt,
-      created_at:     now,
-      kind,
-      files: files.map(f => ({
-        name: f.originalname,
-        mime: f.mimetype || 'application/octet-stream',
-        size: f.size,
-        path: f.path,
-      })),
-    });
-
-    res.json({
-      code,
-      expires_at: expiresAt,
-      downloads_left: downloads,
-      total_bytes: totalBytes,
-      file_count: files.length,
-      kind,
-    });
   });
 });
 
@@ -394,7 +411,7 @@ function cleanupRequestUploads(req) {
 function clamp(n, lo, hi) { return Math.max(lo, Math.min(hi, n || lo)); }
 
 /* ─── Parcel fetch (info + claim + file) ──────────────── */
-app.post('/api/parcel/:code/info', async (req, res) => {
+app.post('/api/parcel/:code/info', json64, async (req, res) => {
   const code = String(req.params.code || '');
   if (!/^\d{6}$/.test(code)) return res.status(400).json({ error: 'bad_code' });
 
@@ -426,7 +443,7 @@ setInterval(() => {
   for (const [k, v] of claimTokens) if (v.expires_at < now) claimTokens.delete(k);
 }, 5 * 60 * 1000);
 
-app.post('/api/parcel/:code/claim', async (req, res) => {
+app.post('/api/parcel/:code/claim', json64, async (req, res) => {
   const code = String(req.params.code || '');
   if (!/^\d{6}$/.test(code)) return res.status(400).json({ error: 'bad_code' });
 
@@ -633,7 +650,7 @@ app.get('/api/admin/config', requireAdmin, (req, res) => {
   });
 });
 
-app.post('/api/admin/config', requireAdmin, express.json(), (req, res) => {
+app.post('/api/admin/config', requireAdmin, json64, (req, res) => {
   const patch = {};
   if ('max_storage_gb'   in req.body) patch.maxStorageGB    = Math.max(0.1, parseFloat(req.body.max_storage_gb)   || 0);
   if ('max_upload_gb'    in req.body) patch.maxUploadGB     = Math.max(0.1, Math.min(ENV_MAX_UPLOAD_GB, parseFloat(req.body.max_upload_gb) || 0));
@@ -647,7 +664,7 @@ app.post('/api/admin/config', requireAdmin, express.json(), (req, res) => {
   });
 });
 
-app.post('/api/admin/password', requireAdmin, async (req, res) => {
+app.post('/api/admin/password', requireAdmin, json64, async (req, res) => {
   const { current, next, username } = req.body || {};
   if (typeof current !== 'string' || typeof next !== 'string' || next.length < 1) {
     return res.status(400).json({ error: 'bad_request' });
@@ -667,6 +684,12 @@ app.post('/api/admin/password', requireAdmin, async (req, res) => {
   store.save();
   res.json({ ok: true, username: a.username });
 });
+
+// Static files. Caching disabled so deployments roll out immediately.
+app.use(express.static(path.join(__dirname, 'public'), {
+  etag: false,
+  setHeaders: (res) => res.setHeader('Cache-Control', 'no-store'),
+}));
 
 /* ─── Start ───────────────────────────────────────────── */
 app.listen(PORT, () => {

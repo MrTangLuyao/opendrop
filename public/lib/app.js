@@ -430,11 +430,11 @@
     send.cancelled = false;
 
     const fd = new FormData();
-    for (const f of send.files) fd.append('files', f.blob, f.name);
     fd.append('password', password);
     fd.append('downloads', String(downloads));
     fd.append('expiry_hours', String(expiryHrs));
     fd.append('kind', sendKind);
+    for (const f of send.files) fd.append('files', f.blob, f.name);
 
     const xhr = new XMLHttpRequest();
     send.xhr = xhr;
