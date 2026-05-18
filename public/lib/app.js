@@ -90,6 +90,17 @@
       'account-never-expires': '管理员账户 · 永不过期',
       'account-perm-never-expires': '长期账户 · 永不过期',
       'admin-console': '进入控制台',
+      'edit-parcel-title': '编辑包裹',
+      'edit-parcel-meta-line': '取件码 {code}',
+      'edit-expiry': '有效期（小时，从现在起重新计算）',
+      'edit-downloads': '剩余下载次数',
+      'btn-save': '保存',
+      'btn-cancel': '取消',
+      'btn-confirm': '确定',
+      'confirm-delete-title': '确定要删除？',
+      'confirm-delete-message': '删除包裹 {code} 会立刻销毁里面的文件，操作无法撤销。',
+      'toast-saved': '已保存',
+      'err-save-fail': '保存失败',
     },
     en: {
       'brand-sub': 'Temporary file drop',
@@ -165,6 +176,17 @@
       'account-never-expires': 'Admin account · never expires',
       'account-perm-never-expires': 'Long-term account · never expires',
       'admin-console': 'Open admin panel',
+      'edit-parcel-title': 'Edit parcel',
+      'edit-parcel-meta-line': 'Pickup code {code}',
+      'edit-expiry': 'Expiry (hours from now)',
+      'edit-downloads': 'Downloads remaining',
+      'btn-save': 'Save',
+      'btn-cancel': 'Cancel',
+      'btn-confirm': 'Confirm',
+      'confirm-delete-title': 'Delete this parcel?',
+      'confirm-delete-message': 'Deleting parcel {code} destroys its files immediately and cannot be undone.',
+      'toast-saved': 'Saved',
+      'err-save-fail': 'Save failed',
     },
   };
 
@@ -869,6 +891,13 @@
         document.getElementById('receive-text-modal').hidden = true;
         showStage('landing');
         break;
+      case 'edit-parcel-close':
+        document.getElementById('edit-parcel-modal').hidden = true;
+        editingParcel = null;
+        break;
+      case 'confirm-cancel':
+        document.getElementById('confirm-modal').hidden = true;
+        break;
       case 'login':
         toggleNavMenu(false);
         openLoginModal();
@@ -1000,16 +1029,17 @@
         err.hidden = false;
         return;
       }
-      me = body;
-      refreshAuthUi();
-      document.getElementById('login-modal').hidden = true;
-      document.getElementById('login-password').value = '';
-
-      // If the modal was opened because the user tried to use a gated feature
-      // while signed out, run that pending action now.
-      const next = pendingAfterLogin;
-      pendingAfterLogin = null;
-      if (next === 'my-files') loadMyFiles();
+      // Persist the pending-action intent across the reload so e.g. clicking
+      // 我的文件 → login → reload still lands the user on the my-files page.
+      if (pendingAfterLogin) {
+        try { sessionStorage.setItem('od_pendingAfterLogin', pendingAfterLogin); } catch (_) {}
+        pendingAfterLogin = null;
+      }
+      // Force a full reload so every part of the UI rebinds to the new auth
+      // state (the menu items, the my-files link, the navbar gauge meta, ...).
+      // Cheaper than manually re-running every refresh* hook and more bulletproof.
+      location.reload();
+      return;
     } catch (_) {
       err.textContent = tr('err-network');
       err.hidden = false;
@@ -1078,21 +1108,94 @@
           </div>
           <div class="parcel-meta">${escapeText(tr('file-row-meta', { size: fmtBytes(p.total_bytes), n: p.downloads_left, expiry }))}</div>
         </div>
+        <button class="parcel-edit ripple-surface" type="button" aria-label="Edit">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
         <button class="parcel-delete ripple-surface" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
           <span>${tr('btn-delete-parcel')}</span>
         </button>`;
-      row.querySelector('.parcel-delete').addEventListener('click', async () => {
-        try {
-          const r = await fetch('/api/me/parcels/' + p.code, { method: 'DELETE', credentials: 'same-origin' });
-          if (r.ok) {
-            toast(tr('toast-deleted'));
-            loadMyFiles();
-            refreshStorageGauge();
-          }
-        } catch (_) {}
+      row.querySelector('.parcel-edit').addEventListener('click', () => openEditModal(p));
+      row.querySelector('.parcel-delete').addEventListener('click', () => {
+        confirmDialog({
+          title:   tr('confirm-delete-title'),
+          message: tr('confirm-delete-message', { code: p.code }),
+          onConfirm: async () => {
+            try {
+              const r = await fetch('/api/me/parcels/' + p.code, { method: 'DELETE', credentials: 'same-origin' });
+              if (r.ok) {
+                toast(tr('toast-deleted'));
+                loadMyFiles();
+                refreshStorageGauge();
+              }
+            } catch (_) {}
+          },
+        });
       });
       list.appendChild(row);
+    });
+  }
+
+  /* ─────────────────────────────────────────────────────────
+   * Edit-parcel modal + generic confirm modal
+   * ───────────────────────────────────────────────────────── */
+  let editingParcel = null;   // the parcel object backing the edit modal
+
+  function openEditModal(p) {
+    editingParcel = p;
+    document.getElementById('edit-parcel-meta').textContent = tr('edit-parcel-meta-line', { code: p.code });
+    // Default "new expiry" to the hours currently remaining (≥1), capped by config.
+    const hLeft = Math.max(1, Math.ceil((p.expires_at - Date.now()) / 3600000));
+    const exInput = document.getElementById('edit-expiry-hours');
+    exInput.max   = (storageInfo && storageInfo.max_expiry_hours) || 168;
+    exInput.value = Math.min(hLeft, parseInt(exInput.max, 10));
+    document.getElementById('edit-downloads').value = p.downloads_left;
+    document.getElementById('edit-parcel-err').hidden = true;
+    document.getElementById('edit-parcel-modal').hidden = false;
+  }
+
+  document.getElementById('btn-edit-parcel-save').addEventListener('click', async () => {
+    if (!editingParcel) return;
+    const err = document.getElementById('edit-parcel-err');
+    err.hidden = true;
+    const expiryHours = parseInt(document.getElementById('edit-expiry-hours').value, 10);
+    const downloads   = parseInt(document.getElementById('edit-downloads').value, 10);
+    try {
+      const r = await fetch('/api/me/parcels/' + editingParcel.code, {
+        method: 'PATCH',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ expiry_hours: expiryHours, downloads }),
+      });
+      const body = await safeJson(r);
+      if (!r.ok) {
+        err.textContent = (body && body.error) || tr('err-save-fail');
+        err.hidden = false;
+        return;
+      }
+      document.getElementById('edit-parcel-modal').hidden = true;
+      editingParcel = null;
+      toast(tr('toast-saved'));
+      loadMyFiles();
+    } catch (_) {
+      err.textContent = tr('err-network');
+      err.hidden = false;
+    }
+  });
+
+  // Generic confirm dialog driving #confirm-modal. Replaces the OK button's
+  // listener each invocation so callbacks don't stack across invocations.
+  function confirmDialog({ title, message, onConfirm, okLabel }) {
+    document.getElementById('confirm-title').textContent   = title || tr('btn-confirm');
+    document.getElementById('confirm-message').textContent = message || '';
+    document.getElementById('confirm-ok-label').textContent = okLabel || tr('btn-confirm');
+    document.getElementById('confirm-modal').hidden = false;
+    const oldBtn = document.getElementById('btn-confirm-ok');
+    const newBtn = oldBtn.cloneNode(true);
+    oldBtn.parentNode.replaceChild(newBtn, oldBtn);
+    newBtn.addEventListener('click', () => {
+      document.getElementById('confirm-modal').hidden = true;
+      try { onConfirm && onConfirm(); } catch (e) { console.error(e); }
     });
   }
 
@@ -1153,7 +1256,13 @@
   bindRipples();
   new MutationObserver(bindRipples).observe(document.body, { childList: true, subtree: true });
 
-  fetchMe().then(refreshStorageGauge);
+  fetchMe().then(() => {
+    refreshStorageGauge();
+    // Resume any action that was queued before the login reload.
+    let pending = null;
+    try { pending = sessionStorage.getItem('od_pendingAfterLogin'); sessionStorage.removeItem('od_pendingAfterLogin'); } catch (_) {}
+    if (pending === 'my-files' && me) loadMyFiles();
+  });
 
   // Deep link: /d/CODE redirects server-side to /?c=NNNNNN; either route auto-fetches.
   const params = new URLSearchParams(window.location.search);

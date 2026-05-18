@@ -512,6 +512,39 @@ app.delete('/api/me/parcels/:code', (req, res) => {
   res.json({ ok: true });
 });
 
+// Edit a parcel the caller owns. Either or both fields may be supplied:
+//   expiry_hours: new expires_at = now + clamp(value, 1, maxExpiryHours()) hours
+//   downloads:    new downloads_left = clamp(value, 1, 999)
+app.patch('/api/me/parcels/:code', json64, (req, res) => {
+  const s = currentSession(req);
+  if (!s) return res.status(401).json({ error: 'not signed in' });
+
+  const code = String(req.params.code || '');
+  const p = store.parcelByCode(code);
+  if (!p)                            return res.status(404).json({ error: 'not_found' });
+  if (p.account_id !== s.account_id) return res.status(403).json({ error: 'not_owner' });
+
+  const body = req.body || {};
+  let touched = false;
+  if (body.expiry_hours != null) {
+    const h = clamp(parseInt(body.expiry_hours, 10), 1, maxExpiryHours());
+    p.expires_at = Date.now() + h * 3600 * 1000;
+    touched = true;
+  }
+  if (body.downloads != null) {
+    p.downloads_left = clamp(parseInt(body.downloads, 10), 1, 999);
+    touched = true;
+  }
+  if (!touched) return res.status(400).json({ error: 'no_changes' });
+
+  store.save();
+  res.json({
+    code:           p.code,
+    expires_at:     p.expires_at,
+    downloads_left: p.downloads_left,
+  });
+});
+
 /* ─── Admin ──────────────────────────────────────────────
  * Admin auth reuses the regular session cookie BUT every admin endpoint
  * checks `session.is_admin === 1`. That way an admin can also use the

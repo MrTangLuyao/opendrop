@@ -61,6 +61,10 @@
         <span id="lang-label" class="visually-hidden">EN ⇄ 文</span>
       </button>
 
+      <a id="github-link" class="icon-btn ripple-surface" href="https://github.com/MrTangLuyao/opendrop" target="_blank" rel="noopener" aria-label="GitHub" title="GitHub">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.11.79-.25.79-.56 0-.27-.01-1-.02-1.97-3.2.69-3.87-1.54-3.87-1.54-.52-1.32-1.27-1.67-1.27-1.67-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.75 2.69 1.24 3.34.95.1-.74.4-1.24.72-1.53-2.55-.29-5.23-1.27-5.23-5.66 0-1.25.45-2.27 1.18-3.07-.12-.29-.51-1.46.11-3.04 0 0 .96-.31 3.16 1.17.92-.25 1.91-.38 2.89-.38.98 0 1.97.13 2.89.38 2.2-1.48 3.16-1.17 3.16-1.17.62 1.58.23 2.75.11 3.04.74.8 1.18 1.82 1.18 3.07 0 4.4-2.69 5.36-5.25 5.65.41.35.78 1.04.78 2.1 0 1.52-.01 2.74-.01 3.11 0 .31.21.67.8.55C20.71 21.39 24 17.08 24 12 24 5.65 18.85.5 12 .5z"/></svg>
+      </a>
+
       <button id="menu-btn" class="icon-btn ripple-surface" type="button" aria-label="Menu">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6"  x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
       </button>
@@ -364,6 +368,58 @@
       <button id="btn-login-submit" class="cta cta-primary ripple-surface card-cta" type="button">
         <span data-i18n="btn-login">登录 / 注册</span>
       </button>
+    </div>
+  </div>
+
+  <!-- ─── Edit-parcel modal (pencil button on the 我的文件 row) ─── -->
+  <div id="edit-parcel-modal" class="modal" hidden>
+    <div class="modal-backdrop" data-action="edit-parcel-close"></div>
+    <div class="modal-card">
+      <button class="card-close ripple-surface" type="button" data-action="edit-parcel-close" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+      <h2 data-i18n="edit-parcel-title">编辑包裹</h2>
+      <p class="card-sub" id="edit-parcel-meta">—</p>
+
+      <label class="config-row">
+        <span class="config-label">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          <span data-i18n="edit-expiry">有效期 (小时，从现在起)</span>
+        </span>
+        <input type="number" id="edit-expiry-hours" min="1" max="168">
+      </label>
+      <label class="config-row">
+        <span class="config-label">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <span data-i18n="edit-downloads">剩余下载次数</span>
+        </span>
+        <input type="number" id="edit-downloads" min="1" max="999">
+      </label>
+
+      <p class="card-error" id="edit-parcel-err" hidden></p>
+      <button id="btn-edit-parcel-save" class="cta cta-primary ripple-surface card-cta" type="button">
+        <span data-i18n="btn-save">保存</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ─── Generic confirm modal (used by delete-parcel + future destructive actions) ─── -->
+  <div id="confirm-modal" class="modal" hidden>
+    <div class="modal-backdrop" data-action="confirm-cancel"></div>
+    <div class="modal-card">
+      <button class="card-close ripple-surface" type="button" data-action="confirm-cancel" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+      <h2 id="confirm-title">—</h2>
+      <p class="card-sub" id="confirm-message">—</p>
+      <div class="confirm-actions">
+        <button class="cta cta-outline ripple-surface" type="button" data-action="confirm-cancel">
+          <span data-i18n="btn-cancel">取消</span>
+        </button>
+        <button id="btn-confirm-ok" class="cta cta-primary ripple-surface" type="button">
+          <span id="confirm-ok-label" data-i18n="btn-confirm">确定</span>
+        </button>
+      </div>
     </div>
   </div>
 

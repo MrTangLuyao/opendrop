@@ -846,6 +846,7 @@ footer {
   border-radius: 50%;
   position: relative;
   overflow: hidden;
+  text-decoration: none;       /* needed because .icon-btn also covers <a> (GitHub link) */
   transition: background 0.2s ease, color 0.2s ease;
 }
 .icon-btn:hover,
@@ -1221,6 +1222,38 @@ footer {
   vertical-align: middle;
 }
 .never-expires { color: var(--accent-on); font-style: italic; }
+
+/* Pencil-shaped edit button next to the delete button on each parcel row. */
+.parcel-edit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px; height: 32px;
+  margin-right: 6px;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+  transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+.parcel-edit:hover {
+  background: var(--accent-dim);
+  color: var(--accent-on);
+  border-color: rgba(217, 119, 87, 0.40);
+}
+.parcel-edit svg { width: 14px; height: 14px; }
+
+/* Layout for the cancel + confirm buttons inside the confirm modal. */
+.confirm-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 18px;
+}
+.confirm-actions .cta { flex: 1; margin-top: 0; }
 
 /* ============================================================
  * Small-screen polish
