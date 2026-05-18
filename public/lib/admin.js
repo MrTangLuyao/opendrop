@@ -76,6 +76,17 @@
       'toast-renewed':   '已续期',
       'toast-saved':     '已保存',
       'toast-updated':   '已修改',
+      'btn-edit':        '修改',
+      'btn-save':        '保存',
+      'btn-mark-permanent': '永久',
+      'btn-mark-unlimited': '无限',
+      'edit-parcel-title':     '编辑包裹',
+      'edit-parcel-meta-line': '取件码 {code} · 所有者 {owner}',
+      'edit-expiry':           '有效期 (小时)',
+      'edit-downloads':        '剩余下载次数',
+      'cell-permanent':        '永久',
+      'cell-unlimited':        '无限',
+      'err-save-fail':         '保存失败',
       'toast-perm-on':   '已标记为长期账户',
       'toast-perm-off':  '已取消长期标记',
       'h':               '小时',
@@ -151,6 +162,17 @@
       'toast-renewed':   'Renewed',
       'toast-saved':     'Saved',
       'toast-updated':   'Updated',
+      'btn-edit':        'Edit',
+      'btn-save':        'Save',
+      'btn-mark-permanent': 'Permanent',
+      'btn-mark-unlimited': 'Unlimited',
+      'edit-parcel-title':     'Edit parcel',
+      'edit-parcel-meta-line': 'Code {code} · owner {owner}',
+      'edit-expiry':           'Expiry (hours)',
+      'edit-downloads':        'Downloads remaining',
+      'cell-permanent':        'permanent',
+      'cell-unlimited':        'unlimited',
+      'err-save-fail':         'Save failed',
       'toast-perm-on':   'Marked as long-term account',
       'toast-perm-off':  'Long-term flag removed',
       'h':               'h',
@@ -339,29 +361,120 @@
         return;
       }
       const now = Date.now();
+      const FIFTY_YRS_MS = 50 * 365 * 24 * 3600 * 1000;
+      const HUGE_DL      = 99999;
+      const parcelMap = new Map();
       for (const p of parcels) {
-        const expSoon = p.expires_at < now;
+        parcelMap.set(p.code, p);
+        const expSoon  = p.expires_at < now;
+        const isPerm   = p.expires_at - now > FIFTY_YRS_MS;
+        const isUnlim  = p.downloads_left >= HUGE_DL;
         const row = document.createElement('tr');
         const kindLabel = p.kind === 'text' ? tr('cell-text-kind') : tr('cell-files-kind', { n: p.file_count });
+        const dlCell    = isUnlim ? `<span class="never-expires">${tr('cell-unlimited')}</span>` : p.downloads_left;
+        const expCell   = isPerm
+          ? `<span class="never-expires">${tr('cell-permanent')}</span>`
+          : `<span class="${expSoon ? 'expired' : ''}">${fmtDate(p.expires_at)}</span>`;
         row.innerHTML = `
           <td class="mono">${p.code}${p.has_password ? ' 🔒' : ''}</td>
           <td>${escapeText(p.owner)}</td>
           <td>${kindLabel}</td>
           <td>${fmtBytes(p.total_bytes)}</td>
-          <td>${p.downloads_left}</td>
-          <td class="${expSoon ? 'expired' : ''}">${fmtDate(p.expires_at)}</td>
-          <td><button class="row-action ripple-surface" data-code="${p.code}">${tr('btn-delete')}</button></td>`;
+          <td>${dlCell}</td>
+          <td>${expCell}</td>
+          <td>
+            <button class="row-action ripple-surface" data-action="edit"   data-code="${p.code}">${tr('btn-edit')}</button>
+            <button class="row-action danger ripple-surface" data-action="delete" data-code="${p.code}">${tr('btn-delete')}</button>
+          </td>`;
         tbody.appendChild(row);
       }
       tbody.querySelectorAll('.row-action').forEach(btn => {
         btn.addEventListener('click', async () => {
-          if (!confirm(tr('confirm-del-parcel', { code: btn.dataset.code }))) return;
-          const r = await fetch('/api/admin/parcels/' + btn.dataset.code, { method: 'DELETE', credentials: 'same-origin' });
-          if (r.ok) { toast(tr('toast-deleted')); loadParcels(); }
+          const code = btn.dataset.code;
+          const act  = btn.dataset.action;
+          if (act === 'delete') {
+            if (!confirm(tr('confirm-del-parcel', { code }))) return;
+            const r = await fetch('/api/admin/parcels/' + code, { method: 'DELETE', credentials: 'same-origin' });
+            if (r.ok) { toast(tr('toast-deleted')); loadParcels(); }
+          } else if (act === 'edit') {
+            const p = parcelMap.get(code);
+            if (p) openAdminEditParcel(p);
+          }
         });
       });
     } catch (_) {}
   }
+
+  /* ─── Admin edit-parcel modal ──────────────────────────── */
+  // Constants must mirror server.js ADMIN_PARCEL_MAX_* — these are the
+  // values the 永久 / 无限 buttons preset and the server clamps to.
+  const ADMIN_MAX_HOURS = 100 * 365 * 24;   // 100 years
+  const ADMIN_MAX_DLS   = 999999;
+  let adminEditingParcel = null;
+
+  function openAdminEditParcel(p) {
+    adminEditingParcel = p;
+    document.getElementById('admin-edit-parcel-meta').textContent =
+      tr('edit-parcel-meta-line', { code: p.code, owner: p.owner });
+    const hLeft = Math.max(1, Math.ceil((p.expires_at - Date.now()) / 3600000));
+    document.getElementById('admin-edit-expiry-hours').value =
+      Math.min(hLeft, ADMIN_MAX_HOURS);
+    document.getElementById('admin-edit-downloads').value =
+      Math.min(p.downloads_left, ADMIN_MAX_DLS);
+    document.getElementById('admin-edit-parcel-err').hidden = true;
+    document.getElementById('admin-edit-parcel-modal').hidden = false;
+  }
+
+  document.getElementById('btn-admin-set-permanent').addEventListener('click', () => {
+    document.getElementById('admin-edit-expiry-hours').value = ADMIN_MAX_HOURS;
+  });
+  document.getElementById('btn-admin-set-unlimited').addEventListener('click', () => {
+    document.getElementById('admin-edit-downloads').value = ADMIN_MAX_DLS;
+  });
+
+  document.getElementById('btn-admin-edit-parcel-save').addEventListener('click', async () => {
+    if (!adminEditingParcel) return;
+    const err = document.getElementById('admin-edit-parcel-err');
+    err.hidden = true;
+    const expiryHours = parseInt(document.getElementById('admin-edit-expiry-hours').value, 10);
+    const downloads   = parseInt(document.getElementById('admin-edit-downloads').value, 10);
+    try {
+      const r = await fetch('/api/admin/parcels/' + adminEditingParcel.code, {
+        method: 'PATCH',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          // ship `permanent`/`unlimited` flags when the inputs are at the ceiling,
+          // so the server doesn't end up re-clamping a near-Infinity timestamp.
+          permanent:    expiryHours >= ADMIN_MAX_HOURS,
+          unlimited:    downloads   >= ADMIN_MAX_DLS,
+          expiry_hours: expiryHours,
+          downloads:    downloads,
+        }),
+      });
+      const body = await safeJson(r);
+      if (!r.ok) {
+        err.textContent = (body && body.error) || tr('err-save-fail');
+        err.hidden = false;
+        return;
+      }
+      document.getElementById('admin-edit-parcel-modal').hidden = true;
+      adminEditingParcel = null;
+      toast(tr('toast-saved'));
+      loadParcels();
+    } catch (_) {
+      err.textContent = tr('err-net');
+      err.hidden = false;
+    }
+  });
+
+  // Close the admin edit-parcel modal via the X button or the backdrop.
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('[data-action="admin-edit-parcel-close"]');
+    if (!a) return;
+    document.getElementById('admin-edit-parcel-modal').hidden = true;
+    adminEditingParcel = null;
+  });
 
   /* ─── Panel: accounts ─────────────────────────────────── */
   async function loadAccounts() {

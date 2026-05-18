@@ -613,6 +613,47 @@ app.delete('/api/admin/parcels/:code', requireAdmin, (req, res) => {
   res.json({ ok: true });
 });
 
+// Admin-grade parcel edit. Same shape as the user-side PATCH but with loose
+// clamps: admin can effectively make a parcel permanent (~100 years) and
+// grant ~unlimited downloads. The `permanent` / `unlimited` flags are
+// convenience shortcuts driven by the 永久 / 无限 buttons in the admin UI.
+const ADMIN_PARCEL_MAX_EXPIRY_HOURS = 100 * 365 * 24;   // 100 years
+const ADMIN_PARCEL_MAX_DOWNLOADS    = 999999;
+app.patch('/api/admin/parcels/:code', requireAdmin, json64, (req, res) => {
+  const code = String(req.params.code || '');
+  const p = store.parcelByCode(code);
+  if (!p) return res.status(404).json({ error: 'not_found' });
+
+  const body = req.body || {};
+  let touched = false;
+
+  if (body.permanent === true) {
+    p.expires_at = Date.now() + ADMIN_PARCEL_MAX_EXPIRY_HOURS * 3600 * 1000;
+    touched = true;
+  } else if (body.expiry_hours != null) {
+    const h = clamp(parseInt(body.expiry_hours, 10), 1, ADMIN_PARCEL_MAX_EXPIRY_HOURS);
+    p.expires_at = Date.now() + h * 3600 * 1000;
+    touched = true;
+  }
+
+  if (body.unlimited === true) {
+    p.downloads_left = ADMIN_PARCEL_MAX_DOWNLOADS;
+    touched = true;
+  } else if (body.downloads != null) {
+    p.downloads_left = clamp(parseInt(body.downloads, 10), 1, ADMIN_PARCEL_MAX_DOWNLOADS);
+    touched = true;
+  }
+
+  if (!touched) return res.status(400).json({ error: 'no_changes' });
+
+  store.save();
+  res.json({
+    code:           p.code,
+    expires_at:     p.expires_at,
+    downloads_left: p.downloads_left,
+  });
+});
+
 app.get('/api/admin/accounts', requireAdmin, (req, res) => {
   const accounts = store.allAccounts()
     .filter(a => !a.is_admin)

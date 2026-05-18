@@ -528,9 +528,21 @@ body::after {
   font-size: 13px;
   font-weight: 500;
   letter-spacing: 0.02em;
-  flex-shrink: 0;          /* keep label intact when input gets wide content */
-  /* No min-width — labels size to their own content so the input starts
-   * right after the label instead of being shoved into the row's right half. */
+  flex-shrink: 0;
+  min-width: 96px;         /* shorter labels (用户名 vs 密码) pad to this width so
+                              inputs in the same form line up vertically */
+}
+
+/* Strip the spinner controls off <input type="number"> inside config rows —
+ * keyboard up/down arrows still work; the visual cruft goes away. */
+.config-row input[type="number"]::-webkit-outer-spin-button,
+.config-row input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+.config-row input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
 }
 .config-label svg { width: 14px; height: 14px; flex-shrink: 0; }
 
@@ -1246,6 +1258,26 @@ footer {
   border-color: rgba(217, 119, 87, 0.40);
 }
 .parcel-edit svg { width: 14px; height: 14px; }
+
+/* config-row variant with a trailing quick-set button (e.g. 永久 / 无限). */
+.config-row-with-action { gap: 8px; }
+.config-row-with-action input { min-width: 0; }
+.quick-set {
+  flex-shrink: 0;
+  background: transparent;
+  border: 1px solid rgba(217, 119, 87, 0.35);
+  color: var(--accent-on);
+  font-family: inherit;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  padding: 5px 12px;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+.quick-set:hover { background: var(--accent-dim); color: var(--text); }
 
 /* Layout for the cancel + confirm buttons inside the confirm modal. */
 .confirm-actions {

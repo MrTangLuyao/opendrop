@@ -92,7 +92,7 @@
       'admin-console': '进入控制台',
       'edit-parcel-title': '编辑包裹',
       'edit-parcel-meta-line': '取件码 {code}',
-      'edit-expiry': '有效期（小时，从现在起重新计算）',
+      'edit-expiry': '有效期 (小时)',
       'edit-downloads': '剩余下载次数',
       'btn-save': '保存',
       'btn-cancel': '取消',
