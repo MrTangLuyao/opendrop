@@ -1086,6 +1086,7 @@ footer {
  * ============================================================ */
 .admin-stage { display: none; width: 100%; max-width: 1100px; }
 .admin-stage.is-active { display: block; }
+#admin-dashboard { align-self: flex-start; }
 
 .admin-card { max-width: 420px; margin: 0 auto; }
 .admin-card code {
@@ -1259,11 +1260,18 @@ footer {
 }
 .parcel-edit svg { width: 14px; height: 14px; }
 
-/* config-row variant with a trailing quick-set button (e.g. 永久 / 无限). */
+/* config-row variant with a trailing quick-set button (e.g. 永久 / 无限).
+ * Within these rows we lock down the label AND the button to fixed widths so
+ * every row's columns line up perfectly — without this, slight glyph-width
+ * differences between 永久 and 无限 (or 有效期 / 剩余下载次数) cascade into
+ * visibly misaligned buttons because input is flex:1. */
 .config-row-with-action { gap: 8px; }
+.config-row-with-action .config-label { flex: 0 0 120px; min-width: 0; }
 .config-row-with-action input { min-width: 0; }
 .quick-set {
   flex-shrink: 0;
+  min-width: 64px;
+  text-align: center;
   background: transparent;
   border: 1px solid rgba(217, 119, 87, 0.35);
   color: var(--accent-on);
