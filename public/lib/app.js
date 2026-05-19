@@ -18,7 +18,8 @@
   const T = {
     zh: {
       'brand-sub': '临时文件传输',
-      'tagline': '拖拽即发 · 输码即取',
+      'tagline': '把文件拖入这里即可发送',
+      'footer-storage-label': '占用',
       'cta-send': '发送',
       'cta-receive': '接收',
       'hint-drag': '可直接拖拽文件到页面上以发送',
@@ -46,7 +47,7 @@
       'receive-list-title': '文件已就绪',
       'btn-download-all': '下载全部',
       'drop-overlay': '松手以发送',
-      'footer': '© <span id="year"></span> · open.drop · <span id="footer-storage">—</span>',
+      'footer': '© opendrop · <span data-i18n="footer-storage-label"></span> <span id="footer-storage">—</span>',
       'err-not-found': '取件码不存在',
       'err-bad-password': '密码错误',
       'err-needs-password': '此文件需要密码',
@@ -104,7 +105,8 @@
     },
     en: {
       'brand-sub': 'Temporary file drop',
-      'tagline': 'Drop to send · Code to receive',
+      'tagline': 'Drop files here to send',
+      'footer-storage-label': 'used',
       'cta-send': 'Send',
       'cta-receive': 'Receive',
       'hint-drag': 'Drag files anywhere on the page to send',
@@ -132,7 +134,7 @@
       'receive-list-title': 'Files ready',
       'btn-download-all': 'Download all',
       'drop-overlay': 'Drop to send',
-      'footer': '© <span id="year"></span> · open.drop · <span id="footer-storage">—</span>',
+      'footer': '© opendrop · <span data-i18n="footer-storage-label"></span> <span id="footer-storage">—</span>',
       'err-not-found': 'Code not found',
       'err-bad-password': 'Wrong password',
       'err-needs-password': 'This parcel needs a password',
@@ -198,11 +200,14 @@
     return s;
   }
   function applyLang() {
-    document.querySelectorAll('[data-i18n]').forEach(el => {
-      el.textContent = tr(el.getAttribute('data-i18n'));
-    });
+    // HTML pass runs first so any [data-i18n] children injected via innerHTML
+    // (e.g. the storage label inside the footer template) get filled by the
+    // text pass below instead of being left empty until the next applyLang().
     document.querySelectorAll('[data-i18n-html]').forEach(el => {
       el.innerHTML = tr(el.getAttribute('data-i18n-html'));
+    });
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      el.textContent = tr(el.getAttribute('data-i18n'));
     });
     const yr = document.getElementById('year');
     if (yr) yr.textContent = new Date().getFullYear();
@@ -796,11 +801,66 @@
     dragDepth = Math.max(0, dragDepth - 1);
     if (dragDepth === 0) dropOverlay.classList.remove('is-active');
   });
-  window.addEventListener('drop', (e) => {
+  // Recursively walk a webkitGetAsEntry tree, collecting every real File
+  // (skipping the 0-byte placeholder Chrome hands back when you drop a folder
+  // straight into `dataTransfer.files`).
+  function walkEntry(entry, path) {
+    return new Promise((resolve) => {
+      if (!entry) return resolve([]);
+      if (entry.isFile) {
+        entry.file(
+          (f) => {
+            // Stamp the relative path so multi-file renderers can show structure
+            try { Object.defineProperty(f, 'webkitRelativePath', { value: path + f.name, configurable: true }); } catch (_) {}
+            resolve([f]);
+          },
+          () => resolve([])
+        );
+      } else if (entry.isDirectory) {
+        const reader = entry.createReader();
+        const all = [];
+        const readBatch = () => {
+          reader.readEntries(async (entries) => {
+            if (!entries.length) return resolve(all);
+            for (const sub of entries) {
+              const found = await walkEntry(sub, path + entry.name + '/');
+              all.push(...found);
+            }
+            readBatch(); // readEntries returns in chunks; keep going until empty
+          }, () => resolve(all));
+        };
+        readBatch();
+      } else {
+        resolve([]);
+      }
+    });
+  }
+
+  window.addEventListener('drop', async (e) => {
     if (!e.dataTransfer) return;
     e.preventDefault();
     dragDepth = 0;
     dropOverlay.classList.remove('is-active');
+    const items = e.dataTransfer.items;
+    // If items + webkitGetAsEntry are available, prefer the entry walk so
+    // dropping a folder yields its contained files (not a 0-byte placeholder).
+    if (items && items.length && typeof items[0].webkitGetAsEntry === 'function') {
+      const entries = [];
+      for (const it of items) {
+        if (it.kind !== 'file') continue;
+        const en = it.webkitGetAsEntry();
+        if (en) entries.push(en);
+      }
+      if (entries.length) {
+        const files = [];
+        for (const en of entries) {
+          const found = await walkEntry(en, '');
+          files.push(...found);
+        }
+        if (files.length) addFilesFromList(files);
+        return;
+      }
+    }
     if (e.dataTransfer.files && e.dataTransfer.files.length) addFilesFromList(e.dataTransfer.files);
   });
 

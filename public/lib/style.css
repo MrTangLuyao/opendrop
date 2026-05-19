@@ -1146,6 +1146,28 @@ footer {
   font-weight: 700;
 }
 
+/* Narrow the form-style panels (config + password) so the rows don't span
+ * the full 1100px stage; the data-heavy panels (parcels, accounts) keep the
+ * full width for their tables. Add vertical breathing room between rows and
+ * widen labels enough for the longer Chinese strings (最长有效期（小时）). */
+.admin-panel[data-panel="config"],
+.admin-panel[data-panel="password"] {
+  max-width: 520px;
+}
+.admin-panel[data-panel="config"] .config-row,
+.admin-panel[data-panel="password"] .config-row {
+  margin-bottom: 12px;
+}
+.admin-panel[data-panel="config"] .config-label,
+.admin-panel[data-panel="password"] .config-label {
+  flex: 0 0 168px;
+  min-width: 0;
+}
+.admin-panel[data-panel="config"] .card-cta,
+.admin-panel[data-panel="password"] .card-cta {
+  margin-top: 4px;
+}
+
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
