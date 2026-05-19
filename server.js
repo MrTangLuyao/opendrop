@@ -167,8 +167,21 @@ sweep();
 setInterval(sweep, 60 * 60 * 1000);  // hourly
 
 /* ─── Multer disk storage with per-request code folder ─ */
+// multer/busboy decode multipart filenames as Latin-1 per RFC 7578, but every
+// modern browser actually sends them as raw UTF-8 bytes. Round-tripping the
+// string through latin1→utf8 recovers the original characters; pure-ASCII
+// filenames pass through unchanged, so this is safe for every code path.
+// Mutating `file.originalname` here means the route handler (which stores
+// `name: f.originalname` on the parcel record) sees the fixed string too.
+function fixMultipartUtf8(file) {
+  if (typeof file.originalname === 'string') {
+    file.originalname = Buffer.from(file.originalname, 'latin1').toString('utf8');
+  }
+}
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
+    fixMultipartUtf8(file);
     // req._parcelCode is pre-assigned by checkUploadLimits middleware
     const dir = path.join(UPLOADS_DIR, req._parcelCode || 'unknown');
     cb(null, dir);
