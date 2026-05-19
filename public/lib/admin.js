@@ -453,8 +453,6 @@
     pw.placeholder = p.has_password
       ? tr('edit-password-placeholder-with')
       : tr('edit-password-placeholder-without');
-    const toggle = document.getElementById('btn-admin-toggle-password');
-    if (toggle) toggle.textContent = tr('btn-show');
     document.getElementById('admin-edit-parcel-err').hidden = true;
     document.getElementById('admin-edit-parcel-modal').hidden = false;
   }
@@ -465,23 +463,12 @@
   document.getElementById('btn-admin-set-unlimited').addEventListener('click', () => {
     document.getElementById('admin-edit-downloads').value = ADMIN_MAX_DLS;
   });
-  // 显示 / 隐藏 toggle for the password input. Pure DOM, no network.
-  document.getElementById('btn-admin-toggle-password').addEventListener('click', (e) => {
-    const input  = document.getElementById('admin-edit-password');
-    const btn    = e.currentTarget;
-    const reveal = input.type === 'password';
-    input.type        = reveal ? 'text' : 'password';
-    btn.textContent   = reveal ? tr('btn-hide') : tr('btn-show');
-  });
   // 清除 — flag the parcel for password removal and visually empty the field.
   // The save handler then ships `password: ''` so the server drops the hash.
   document.getElementById('btn-admin-clear-password').addEventListener('click', () => {
     const input = document.getElementById('admin-edit-password');
     input.value = '';
-    input.type  = 'password';
     adminPasswordCleared = true;
-    const toggle = document.getElementById('btn-admin-toggle-password');
-    if (toggle) toggle.textContent = tr('btn-show');
   });
 
   document.getElementById('btn-admin-edit-parcel-save').addEventListener('click', async () => {
