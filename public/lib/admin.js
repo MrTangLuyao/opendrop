@@ -84,6 +84,13 @@
       'edit-parcel-meta-line': '取件码 {code} · 所有者 {owner}',
       'edit-expiry':           '有效期 (小时)',
       'edit-downloads':        '剩余下载次数',
+      'edit-password':         '密码',
+      'edit-password-placeholder-with':    '已设置 · 留空保持不变',
+      'edit-password-placeholder-without': '未设置 · 留空表示无密码',
+      'btn-show':              '显示',
+      'btn-hide':              '隐藏',
+      'btn-clear-password':    '清除',
+      'err-net':               '网络错误，请重试',
       'cell-permanent':        '永久',
       'cell-unlimited':        '无限',
       'err-save-fail':         '保存失败',
@@ -170,6 +177,13 @@
       'edit-parcel-meta-line': 'Code {code} · owner {owner}',
       'edit-expiry':           'Expiry (hours)',
       'edit-downloads':        'Downloads remaining',
+      'edit-password':         'Password',
+      'edit-password-placeholder-with':    'Set · leave blank to keep',
+      'edit-password-placeholder-without': 'None · leave blank for open access',
+      'btn-show':              'Show',
+      'btn-hide':              'Hide',
+      'btn-clear-password':    'Clear',
+      'err-net':               'Network error — please retry',
       'cell-permanent':        'permanent',
       'cell-unlimited':        'unlimited',
       'err-save-fail':         'Save failed',
@@ -191,8 +205,12 @@
     return s;
   }
   function applyLang() {
-    document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = tr(el.getAttribute('data-i18n')); });
+    // HTML pass first so any [data-i18n] children injected via innerHTML
+    // (e.g. nested labels inside translated blocks) get filled by the text
+    // pass below. Placeholder pass picks up <input data-i18n-placeholder="...">.
     document.querySelectorAll('[data-i18n-html]').forEach(el => { el.innerHTML = tr(el.getAttribute('data-i18n-html')); });
+    document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = tr(el.getAttribute('data-i18n')); });
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el => { el.setAttribute('placeholder', tr(el.getAttribute('data-i18n-placeholder'))); });
     document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en';
     const active = document.querySelector('.admin-tab.is-active');
     if (active) refreshPanel(active.dataset.tab);
@@ -412,8 +430,14 @@
   const ADMIN_MAX_DLS   = 999999;
   let adminEditingParcel = null;
 
+  // Track whether admin pressed 清除 — distinguishes "intentionally clear the
+  // password" (send empty string) from "leave the field blank to keep existing"
+  // (omit the field entirely). Reset every time the modal opens.
+  let adminPasswordCleared = false;
+
   function openAdminEditParcel(p) {
     adminEditingParcel = p;
+    adminPasswordCleared = false;
     document.getElementById('admin-edit-parcel-meta').textContent =
       tr('edit-parcel-meta-line', { code: p.code, owner: p.owner });
     const hLeft = Math.max(1, Math.ceil((p.expires_at - Date.now()) / 3600000));
@@ -421,6 +445,16 @@
       Math.min(hLeft, ADMIN_MAX_HOURS);
     document.getElementById('admin-edit-downloads').value =
       Math.min(p.downloads_left, ADMIN_MAX_DLS);
+    // Password field: always starts blank because the bcrypt hash on the
+    // server is one-way; we can only signal whether one is currently set.
+    const pw = document.getElementById('admin-edit-password');
+    pw.value = '';
+    pw.type = 'password';
+    pw.placeholder = p.has_password
+      ? tr('edit-password-placeholder-with')
+      : tr('edit-password-placeholder-without');
+    const toggle = document.getElementById('btn-admin-toggle-password');
+    if (toggle) toggle.textContent = tr('btn-show');
     document.getElementById('admin-edit-parcel-err').hidden = true;
     document.getElementById('admin-edit-parcel-modal').hidden = false;
   }
@@ -431,6 +465,24 @@
   document.getElementById('btn-admin-set-unlimited').addEventListener('click', () => {
     document.getElementById('admin-edit-downloads').value = ADMIN_MAX_DLS;
   });
+  // 显示 / 隐藏 toggle for the password input. Pure DOM, no network.
+  document.getElementById('btn-admin-toggle-password').addEventListener('click', (e) => {
+    const input  = document.getElementById('admin-edit-password');
+    const btn    = e.currentTarget;
+    const reveal = input.type === 'password';
+    input.type        = reveal ? 'text' : 'password';
+    btn.textContent   = reveal ? tr('btn-hide') : tr('btn-show');
+  });
+  // 清除 — flag the parcel for password removal and visually empty the field.
+  // The save handler then ships `password: ''` so the server drops the hash.
+  document.getElementById('btn-admin-clear-password').addEventListener('click', () => {
+    const input = document.getElementById('admin-edit-password');
+    input.value = '';
+    input.type  = 'password';
+    adminPasswordCleared = true;
+    const toggle = document.getElementById('btn-admin-toggle-password');
+    if (toggle) toggle.textContent = tr('btn-show');
+  });
 
   document.getElementById('btn-admin-edit-parcel-save').addEventListener('click', async () => {
     if (!adminEditingParcel) return;
@@ -438,19 +490,27 @@
     err.hidden = true;
     const expiryHours = parseInt(document.getElementById('admin-edit-expiry-hours').value, 10);
     const downloads   = parseInt(document.getElementById('admin-edit-downloads').value, 10);
+    const passwordRaw = document.getElementById('admin-edit-password').value;
+    // Three-state password handling matching the server contract:
+    //   - field has text                → ship the new plaintext (server rehashes)
+    //   - field empty + 清除 was pressed → ship ''  (server clears the hash)
+    //   - field empty, 清除 not pressed → omit the field (server preserves it)
+    const payload = {
+      // ship `permanent`/`unlimited` flags when the inputs are at the ceiling,
+      // so the server doesn't end up re-clamping a near-Infinity timestamp.
+      permanent:    expiryHours >= ADMIN_MAX_HOURS,
+      unlimited:    downloads   >= ADMIN_MAX_DLS,
+      expiry_hours: expiryHours,
+      downloads:    downloads,
+    };
+    if (passwordRaw.length > 0)         payload.password = passwordRaw;
+    else if (adminPasswordCleared)      payload.password = '';
     try {
       const r = await fetch('/api/admin/parcels/' + adminEditingParcel.code, {
         method: 'PATCH',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          // ship `permanent`/`unlimited` flags when the inputs are at the ceiling,
-          // so the server doesn't end up re-clamping a near-Infinity timestamp.
-          permanent:    expiryHours >= ADMIN_MAX_HOURS,
-          unlimited:    downloads   >= ADMIN_MAX_DLS,
-          expiry_hours: expiryHours,
-          downloads:    downloads,
-        }),
+        body: JSON.stringify(payload),
       });
       const body = await safeJson(r);
       if (!r.ok) {

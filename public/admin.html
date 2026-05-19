@@ -182,6 +182,15 @@
         <input type="number" id="admin-edit-downloads" min="1" max="999999">
         <button type="button" class="quick-set ripple-surface" id="btn-admin-set-unlimited" data-i18n="btn-mark-unlimited">无限</button>
       </label>
+      <label class="config-row config-row-with-action">
+        <span class="config-label">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <span data-i18n="edit-password">密码</span>
+        </span>
+        <input type="password" id="admin-edit-password" autocomplete="new-password" data-i18n-placeholder="edit-password-placeholder" placeholder="留空保持不变">
+        <button type="button" class="quick-set ripple-surface" id="btn-admin-toggle-password" data-i18n="btn-show">显示</button>
+        <button type="button" class="quick-set ripple-surface" id="btn-admin-clear-password" data-i18n="btn-clear-password">清除</button>
+      </label>
 
       <p class="card-error" id="admin-edit-parcel-err" hidden></p>
       <button id="btn-admin-edit-parcel-save" class="cta cta-primary ripple-surface card-cta" type="button" data-i18n="btn-save">保存</button>

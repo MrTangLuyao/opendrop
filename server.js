@@ -619,7 +619,7 @@ app.delete('/api/admin/parcels/:code', requireAdmin, (req, res) => {
 // convenience shortcuts driven by the 永久 / 无限 buttons in the admin UI.
 const ADMIN_PARCEL_MAX_EXPIRY_HOURS = 100 * 365 * 24;   // 100 years
 const ADMIN_PARCEL_MAX_DOWNLOADS    = 999999;
-app.patch('/api/admin/parcels/:code', requireAdmin, json64, (req, res) => {
+app.patch('/api/admin/parcels/:code', requireAdmin, json64, async (req, res) => {
   const code = String(req.params.code || '');
   const p = store.parcelByCode(code);
   if (!p) return res.status(404).json({ error: 'not_found' });
@@ -644,6 +644,22 @@ app.patch('/api/admin/parcels/:code', requireAdmin, json64, (req, res) => {
     touched = true;
   }
 
+  // Password edits — three cases distinguished by the body shape:
+  //   body.password absent      → no change (existing hash preserved)
+  //   body.password === ''      → clear the password (anyone can download)
+  //   body.password non-empty   → bcrypt-rehash and replace
+  // The plaintext is NEVER persisted, so the admin UI cannot display the
+  // existing password; the field on the client starts blank by design.
+  if (typeof body.password === 'string') {
+    const next = body.password;
+    if (next === '') {
+      p.password_hash = '';
+    } else {
+      p.password_hash = await bcrypt.hash(next, 10);
+    }
+    touched = true;
+  }
+
   if (!touched) return res.status(400).json({ error: 'no_changes' });
 
   store.save();
@@ -651,6 +667,7 @@ app.patch('/api/admin/parcels/:code', requireAdmin, json64, (req, res) => {
     code:           p.code,
     expires_at:     p.expires_at,
     downloads_left: p.downloads_left,
+    has_password:   !!p.password_hash,
   });
 });
 
