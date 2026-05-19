@@ -1290,9 +1290,14 @@ footer {
 .config-row-with-action { gap: 8px; }
 .config-row-with-action .config-label { flex: 0 0 120px; min-width: 0; }
 .config-row-with-action input { min-width: 0; }
+/* Pin the action group flush against the row's right edge. With flex:1 on the
+ * input this normally happens already, but `margin-left:auto` makes it explicit
+ * so the rightmost button across every row (设为永久 / 设为无限 / 清除密码)
+ * shares an exact right edge no matter how the input shrinks. */
+.config-row-with-action .quick-set:first-of-type { margin-left: auto; }
 .quick-set {
   flex-shrink: 0;
-  min-width: 64px;
+  min-width: 76px;
   text-align: center;
   background: transparent;
   border: 1px solid rgba(217, 119, 87, 0.35);
