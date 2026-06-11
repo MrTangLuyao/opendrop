@@ -412,8 +412,12 @@
           const act  = btn.dataset.action;
           if (act === 'delete') {
             if (!confirm(tr('confirm-del-parcel', { code }))) return;
-            const r = await fetch('/api/admin/parcels/' + code, { method: 'DELETE', credentials: 'same-origin' });
-            if (r.ok) { toast(tr('toast-deleted')); loadParcels(); }
+            try {
+              const r = await fetch('/api/admin/parcels/' + code, { method: 'DELETE', credentials: 'same-origin' });
+              if (r.ok || r.status === 404) toast(tr('toast-deleted'));
+              else toast(tr('err-save-fail'));
+            } catch (_) { toast(tr('err-net')); }
+            loadParcels();
           } else if (act === 'edit') {
             const p = parcelMap.get(code);
             if (p) openAdminEditParcel(p);
@@ -569,18 +573,24 @@
       tbody.querySelectorAll('.row-action').forEach(btn => {
         btn.addEventListener('click', async () => {
           const id = btn.dataset.id;
-          if (btn.dataset.action === 'renew') {
-            const r = await fetch(`/api/admin/accounts/${id}/renew`, { method: 'POST', credentials: 'same-origin' });
-            if (r.ok) { toast(tr('toast-renewed')); loadAccounts(); }
-          } else if (btn.dataset.action === 'toggle-perm') {
-            const r = await fetch(`/api/admin/accounts/${id}/toggle-perm`, { method: 'POST', credentials: 'same-origin' });
-            const body = await r.json().catch(() => ({}));
-            if (r.ok) { toast(body.is_perm ? tr('toast-perm-on') : tr('toast-perm-off')); loadAccounts(); }
-          } else if (btn.dataset.action === 'delete') {
-            if (!confirm(tr('confirm-del-account', { id }))) return;
-            const r = await fetch(`/api/admin/accounts/${id}`, { method: 'DELETE', credentials: 'same-origin' });
-            if (r.ok) { toast(tr('toast-deleted')); loadAccounts(); }
-          }
+          try {
+            if (btn.dataset.action === 'renew') {
+              const r = await fetch(`/api/admin/accounts/${id}/renew`, { method: 'POST', credentials: 'same-origin' });
+              if (r.ok) toast(tr('toast-renewed'));
+              else toast(tr('err-save-fail'));
+            } else if (btn.dataset.action === 'toggle-perm') {
+              const r = await fetch(`/api/admin/accounts/${id}/toggle-perm`, { method: 'POST', credentials: 'same-origin' });
+              const body = await r.json().catch(() => ({}));
+              if (r.ok) toast(body.is_perm ? tr('toast-perm-on') : tr('toast-perm-off'));
+              else toast(tr('err-save-fail'));
+            } else if (btn.dataset.action === 'delete') {
+              if (!confirm(tr('confirm-del-account', { id }))) return;
+              const r = await fetch(`/api/admin/accounts/${id}`, { method: 'DELETE', credentials: 'same-origin' });
+              if (r.ok || r.status === 404) toast(tr('toast-deleted'));
+              else toast(tr('err-save-fail'));
+            }
+          } catch (_) { toast(tr('err-net')); }
+          loadAccounts();
         });
       });
     } catch (_) {}

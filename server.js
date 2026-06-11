@@ -20,6 +20,7 @@
 'use strict';
 
 const fs       = require('fs');
+const fsp      = fs.promises;
 const path     = require('path');
 const crypto   = require('crypto');
 const express  = require('express');
@@ -98,10 +99,15 @@ process.on('SIGINT',  () => { store.saveSync(); process.exit(0); });
 process.on('SIGTERM', () => { store.saveSync(); process.exit(0); });
 
 /* ─── Pickup code generator ───────────────────────────── */
+// Codes for uploads still streaming to disk. Their parcel record doesn't
+// exist yet, so both the code allocator and the orphan sweep must treat
+// them as taken.
+const activeUploads = new Set();
+
 function newPickupCode() {
   for (let i = 0; i < 200; i++) {
     const code = String(crypto.randomInt(0, 1_000_000)).padStart(6, '0');
-    if (!store.parcelByCode(code)) return code;
+    if (!store.parcelByCode(code) && !activeUploads.has(code)) return code;
   }
   throw new Error('Could not allocate unique pickup code');
 }
@@ -129,16 +135,17 @@ function currentSession(req) {
 }
 
 /* ─── Cleanup (parcels + sessions + accounts) ─────────── */
-function sweep() {
+async function sweep() {
   const now = Date.now();
   let removed = 0;
 
-  // Snapshot lists so we don't mutate while iterating.
-  const expired = store.expiredParcels(now).map(p => p.code);
-  for (const code of expired) { removeParcelFiles(code); removed++; }
-
+  // Snapshot lists so we don't mutate while iterating. exhausted ⊂ expired,
+  // so a Set keeps each parcel from being processed twice.
+  const expired   = store.expiredParcels(now).map(p => p.code);
   const exhausted = store.exhaustedExpiredParcels(now).map(p => p.code);
-  for (const code of exhausted) { removeParcelFiles(code); removed++; }
+  for (const code of new Set([...expired, ...exhausted])) {
+    if (await removeParcelFiles(code)) removed++;
+  }
 
   store.purgeExpiredSessions(now);
 
@@ -150,21 +157,40 @@ function sweep() {
     store.deleteAccount(a.id);
   }
 
+  await sweepOrphanDirs();
+
   if (removed > 0) console.log(`[sweep] removed ${removed} expired parcel(s)`);
 }
 
-function removeParcelFiles(code) {
-  const removed = store.deleteParcel(code);
-  if (!removed) return;
-  for (const f of removed.files) {
-    try { fs.unlinkSync(f.path); } catch (_) {}
+// Reap upload dirs with no parcel record — left behind by uploads that were
+// aborted mid-stream or crashed before the index insert. Without this they
+// accumulate forever and silently eat the disk (the storage gauge only
+// counts indexed parcels), until real uploads start failing with ENOSPC.
+async function sweepOrphanDirs() {
+  let entries;
+  try { entries = await fsp.readdir(UPLOADS_DIR, { withFileTypes: true }); } catch (_) { return; }
+  for (const ent of entries) {
+    if (!ent.isDirectory()) continue;
+    const code = ent.name;
+    if (activeUploads.has(code) || store.parcelByCode(code)) continue;
+    await fsp.rm(path.join(UPLOADS_DIR, code), { recursive: true, force: true }).catch(() => {});
+    console.log(`[sweep] removed orphan upload dir ${code}`);
   }
-  const dir = path.join(UPLOADS_DIR, code);
-  try { fs.rmdirSync(dir); } catch (_) {}
 }
 
-sweep();
-setInterval(sweep, 60 * 60 * 1000);  // hourly
+// Async on purpose: deleting a multi-GB parcel with sync fs calls used to
+// freeze the event loop — every request (and the whole UI) hung until the
+// disk finished. fs.promises keeps the server responsive during deletes.
+async function removeParcelFiles(code) {
+  const removed = store.deleteParcel(code);
+  if (!removed) return false;
+  await Promise.all(removed.files.map(f => fsp.rm(f.path, { force: true }).catch(() => {})));
+  await fsp.rm(path.join(UPLOADS_DIR, code), { recursive: true, force: true }).catch(() => {});
+  return true;
+}
+
+sweep().catch(e => console.error('[sweep] failed:', e));
+setInterval(() => sweep().catch(e => console.error('[sweep] failed:', e)), 60 * 60 * 1000);  // hourly
 
 /* ─── Multer disk storage with per-request code folder ─ */
 // multer/busboy decode multipart filenames as Latin-1 per RFC 7578, but every
@@ -325,6 +351,21 @@ const checkUploadLimits = (req, res, next) => {
       console.error('[upload] setup failed:', e);
       return res.status(500).json({ error: 'setup_failed' });
     }
+
+    activeUploads.add(req._parcelCode);
+    res.once('close', () => {
+      const code = req._parcelCode;
+      activeUploads.delete(code);
+      // No parcel record ⇒ the upload was aborted or failed mid-stream.
+      // Reap the partial files, but only after a grace period so multer's
+      // write streams have closed, and re-check in case the code got
+      // re-allocated to a new upload in the meantime.
+      setTimeout(() => {
+        if (!store.parcelByCode(code) && !activeUploads.has(code)) {
+          fsp.rm(path.join(UPLOADS_DIR, code), { recursive: true, force: true }).catch(() => {});
+        }
+      }, 2000);
+    });
   }
 
   // NB: do NOT attach a `req.on('data', ...)` listener here. Doing so flips
@@ -336,7 +377,27 @@ const checkUploadLimits = (req, res, next) => {
   next();
 };
 
-app.post('/api/upload', checkUploadLimits, upload.array('files'), async (req, res) => {
+// Wrap multer so its errors come back as JSON the client can map, instead of
+// falling through to Express's default HTML 500 page (which the SPA could
+// only render as a generic "network error").
+const uploadFiles = upload.array('files');
+function runMulter(req, res, next) {
+  uploadFiles(req, res, (err) => {
+    if (!err) return next();
+    cleanupRequestUploads(req);
+    if (res.headersSent) return;
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      return res.status(413).json({ error: 'file_too_large', max_bytes: MULTER_HARD_BYTES });
+    }
+    if (err.code === 'LIMIT_FILE_COUNT' || err.code === 'LIMIT_FIELD_COUNT') {
+      return res.status(413).json({ error: 'too_many_files' });
+    }
+    console.error('[upload] multipart error:', err.message || err);
+    res.status(400).json({ error: 'upload_failed' });
+  });
+}
+
+app.post('/api/upload', checkUploadLimits, runMulter, async (req, res) => {
   console.log('[Upload] Multer finished processing files.');
   try {
     const dynMaxUpload  = maxUploadBytes();
@@ -406,10 +467,11 @@ app.post('/api/upload', checkUploadLimits, upload.array('files'), async (req, re
   }
 });
 
+// Fire-and-forget async cleanup — never blocks the event loop on disk I/O.
 function cleanupRequestUploads(req) {
-  if (req.files) for (const f of req.files) { try { fs.unlinkSync(f.path); } catch (_) {} }
+  if (req.files) for (const f of req.files) fsp.rm(f.path, { force: true }).catch(() => {});
   if (req._parcelCode) {
-    try { fs.rmdirSync(path.join(UPLOADS_DIR, req._parcelCode)); } catch (_) {}
+    fsp.rm(path.join(UPLOADS_DIR, req._parcelCode), { recursive: true, force: true }).catch(() => {});
   }
 }
 
@@ -512,7 +574,7 @@ app.get('/api/me/parcels', (req, res) => {
   res.json({ parcels });
 });
 
-app.delete('/api/me/parcels/:code', (req, res) => {
+app.delete('/api/me/parcels/:code', async (req, res) => {
   const s = currentSession(req);
   if (!s) return res.status(401).json({ error: 'not signed in' });
 
@@ -521,7 +583,7 @@ app.delete('/api/me/parcels/:code', (req, res) => {
   if (!p)                            return res.status(404).json({ error: 'not_found' });
   if (p.account_id !== s.account_id) return res.status(403).json({ error: 'not_owner' });
 
-  removeParcelFiles(code);
+  await removeParcelFiles(code);
   res.json({ ok: true });
 });
 
@@ -618,11 +680,11 @@ app.get('/api/admin/parcels', requireAdmin, (req, res) => {
   res.json({ parcels });
 });
 
-app.delete('/api/admin/parcels/:code', requireAdmin, (req, res) => {
+app.delete('/api/admin/parcels/:code', requireAdmin, async (req, res) => {
   const code = String(req.params.code || '');
   const p = store.parcelByCode(code);
   if (!p) return res.status(404).json({ error: 'not_found' });
-  removeParcelFiles(code);
+  await removeParcelFiles(code);
   res.json({ ok: true });
 });
 
@@ -714,14 +776,14 @@ app.post('/api/admin/accounts/:id/toggle-perm', requireAdmin, (req, res) => {
   res.json({ is_perm: !!a.is_perm });
 });
 
-app.delete('/api/admin/accounts/:id', requireAdmin, (req, res) => {
+app.delete('/api/admin/accounts/:id', requireAdmin, async (req, res) => {
   const id = parseInt(req.params.id, 10);
   const a = store.accountById(id);
   if (!a)              return res.status(404).json({ error: 'not_found' });
   if (a.is_admin)      return res.status(403).json({ error: 'cannot_delete_admin' });
 
   // Cascade: delete the account's parcels (files + index)
-  for (const p of store.parcelsByAccount(id)) removeParcelFiles(p.code);
+  for (const p of store.parcelsByAccount(id)) await removeParcelFiles(p.code);
   store.deleteAccount(id);
   res.json({ ok: true });
 });
@@ -788,7 +850,7 @@ app.use(express.static(path.join(__dirname, 'public'), {
 }));
 
 /* ─── Start ───────────────────────────────────────────── */
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`open.drop listening on http://localhost:${PORT}`);
   console.log(`  data dir:        ${DATA_DIR}`);
   console.log(`  upload cap:      ${(maxUploadBytes() / 1073741824).toFixed(2)} GB / parcel  (hard ceiling ${ENV_MAX_UPLOAD_GB} GB)`);
@@ -796,3 +858,10 @@ app.listen(PORT, () => {
   console.log(`  expiry ceiling:  ${maxExpiryHours()} h (${(maxExpiryHours() / 24).toFixed(1)} d)`);
   console.log(`  admin panel:     http://localhost:${PORT}/admin   (default admin/admin)`);
 });
+
+// Node 18+ caps the WHOLE request at requestTimeout=5 min by default and
+// destroys the socket when it fires. Any multi-GB upload on a typical home
+// uplink (30–60 Mbps ≈ 1–2 GB per 5 min) got killed mid-stream — the browser
+// surfaced it as a status=0 transport error. Disable the per-request cap;
+// headersTimeout (60 s default) still guards against slow-header attacks.
+server.requestTimeout = 0;

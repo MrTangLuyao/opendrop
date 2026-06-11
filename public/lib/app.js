@@ -1181,14 +1181,25 @@
           title:   tr('confirm-delete-title'),
           message: tr('confirm-delete-message', { code: p.code }),
           onConfirm: async () => {
+            // 30 s deadline so a wedged request can't leave the UI hanging
+            // forever with no feedback.
+            const ctrl = new AbortController();
+            const timer = setTimeout(() => ctrl.abort(), 30000);
             try {
-              const r = await fetch('/api/me/parcels/' + p.code, { method: 'DELETE', credentials: 'same-origin' });
-              if (r.ok) {
-                toast(tr('toast-deleted'));
-                loadMyFiles();
-                refreshStorageGauge();
-              }
-            } catch (_) {}
+              const r = await fetch('/api/me/parcels/' + p.code, {
+                method: 'DELETE', credentials: 'same-origin', signal: ctrl.signal,
+              });
+              // 404 = already gone (expired & swept) — that's still "deleted".
+              if (r.ok || r.status === 404) toast(tr('toast-deleted'));
+              else toast(tr('err-save-fail'));
+            } catch (_) {
+              toast(tr('err-network'));
+            } finally {
+              clearTimeout(timer);
+            }
+            // Refresh regardless of outcome so the list reflects reality.
+            loadMyFiles();
+            refreshStorageGauge();
           },
         });
       });
