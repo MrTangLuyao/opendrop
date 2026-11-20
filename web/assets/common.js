@@ -255,13 +255,57 @@
     circle.style.left = (e.clientX - rect.left - radius) + 'px';
     circle.style.top = (e.clientY - rect.top - radius) + 'px';
     circle.className = 'ripple';
-    const old = el.querySelector(':scope > .ripple');
-    if (old) old.remove();
+    el.querySelectorAll(':scope > .ripple').forEach(r => r.remove());
     el.appendChild(circle);
     const done = () => { circle.remove(); };
-    circle.addEventListener('animationend', done, { once: true });
-    setTimeout(done, 800);
+    /* Played with the Web Animations API, not a CSS animation: a CSS
+       animation is dropped when its surface is hidden and starts over
+       from the beginning when the surface shows again, so a ripple left
+       in a closed dialog would replay on reopening. A script animation
+       keeps its own clock and finishes on time either way; whatever is
+       still there when its container hides is removed below. */
+    if (typeof circle.animate === 'function') {
+      const anim = circle.animate(
+        [{ transform: 'scale(0)', opacity: 0.12 }, { transform: 'scale(4)', opacity: 0 }],
+        { duration: 600, easing: 'linear', fill: 'forwards' });
+      anim.finished.then(done, done);
+    } else {
+      circle.classList.add('ripple-css');
+      circle.addEventListener('animationend', done, { once: true });
+      circle.addEventListener('animationcancel', done, { once: true });
+    }
+    setTimeout(done, 700);
   }, { passive: true });
+
+  /* Whatever hides (the hidden attribute, a view losing is-active, a menu
+     losing is-open) drops its transient effects at once: no ripple and no
+     half played fade survives to replay when it shows again. One observer
+     covers every dialog, card, panel and menu, present and future. */
+  const settle = root => {
+    root.querySelectorAll('.ripple').forEach(r => r.remove());
+    if (root.classList) root.classList.remove('is-fading-in');
+    root.querySelectorAll('.is-fading-in').forEach(n => n.classList.remove('is-fading-in'));
+  };
+  OD.settleEffects = settle;
+  const lost = (m, cls) => (m.oldValue || '').split(/\s+/).includes(cls) && !m.target.classList.contains(cls);
+  new MutationObserver(list => {
+    for (const m of list) {
+      const t = m.target;
+      if (!(t instanceof Element)) continue;
+      const hid = m.attributeName === 'hidden'
+        ? t.hidden
+        : lost(m, 'is-active') || lost(m, 'is-open');
+      if (hid) settle(t);
+    }
+  }).observe(document.documentElement, {
+    subtree: true, attributes: true, attributeOldValue: true, attributeFilter: ['hidden', 'class']
+  });
+  /* The send hint opens on hover rather than by an attribute: it settles
+     as soon as the pointer leaves. */
+  document.querySelectorAll('.cta-with-hint').forEach(w => {
+    const hint = w.querySelector('.cta-hint');
+    if (hint) w.addEventListener('mouseleave', () => settle(hint));
+  });
 
   /* ─── Loading ───
      Anything that waits on the server says so, the M3 way: an
@@ -315,10 +359,12 @@
     void el.offsetWidth;
     el.classList.add('is-fading-in');
   };
-  document.addEventListener('animationend', e => {
+  const fadeDone = e => {
     const el = e.target;
     if (el.classList && el.classList.contains('is-fading-in') && e.animationName === 'fade-in') el.classList.remove('is-fading-in');
-  });
+  };
+  document.addEventListener('animationend', fadeDone);
+  document.addEventListener('animationcancel', fadeDone);
 
   /* OD.loading(area, work, {clear}): `area` shows the loader (the
      indicator over 加载中, centred; a table body takes it as one full
