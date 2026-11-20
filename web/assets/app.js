@@ -69,6 +69,8 @@
     'err-not-owner': '没有权限修改这个包裹',
     'err-qr': '二维码生成失败',
     'toast-copied': '链接已复制',
+    'toast-code-copied': '取件码已复制',
+    'copy-code': '复制取件码',
     'toast-text-copied': '已复制',
     'toast-no-files': '请先选择文件',
     'toast-deleted': '已删除',
@@ -185,6 +187,8 @@
     'err-not-owner': 'You cannot change this parcel',
     'err-qr': 'QR code unavailable',
     'toast-copied': 'Link copied',
+    'toast-code-copied': 'Code copied',
+    'copy-code': 'Copy the code',
     'toast-text-copied': 'Copied',
     'toast-no-files': 'Pick some files first',
     'toast-deleted': 'Deleted',
@@ -774,10 +778,12 @@
   function revealSuccess(code) {
     lastCode = code;
     pickupCodeEl.textContent = code.split('').join(' ');
+    pickupCodeEl.setAttribute('aria-label', tr('copy-code') + ' ' + code);
     qrPanel.hidden = true;
     qrBtn.setAttribute('aria-expanded', 'false');
     qrImg.removeAttribute('src');
     successShare.textContent = shareUrl(code);
+    successShare.setAttribute('aria-label', tr('copy-link'));
     showStage('send', 'success');
   }
 
@@ -785,6 +791,20 @@
     if (!lastCode) return;
     if (await OD.copy(shareUrl(lastCode))) toast(tr('toast-copied'));
   }
+
+  /* The code and the link copy themselves when clicked (or Enter/Space). */
+  async function copyCode() {
+    if (!lastCode) return;
+    if (await OD.copy(lastCode)) toast(tr('toast-code-copied'));
+  }
+  const pressable = (el, fn) => {
+    el.addEventListener('click', fn);
+    el.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fn(); }
+    });
+  };
+  pressable(pickupCodeEl, copyCode);
+  pressable(successShare, copyShareLink);
 
   /* The code opens once its image is in, the button waiting with it. */
   function toggleQr() {
