@@ -849,9 +849,6 @@ kbd {
   cursor: text;
   transition: background-color .15s ease;
 }
-@media (hover: hover) {
-  .field:hover { --field-c: color-mix(in srgb, var(--on-surface) 6%, var(--field-base)); }
-}
 .field:has(input:focus) { --field-c: color-mix(in srgb, var(--accent) 14%, var(--field-base)); }
 .field-icon {
   position: absolute; left: 14px; top: 50%;
@@ -896,7 +893,9 @@ kbd {
   box-shadow: inset 0 0 0 100px var(--field-c);
   -webkit-text-fill-color: var(--on-surface);
   caret-color: var(--accent);
-  transition: background-color 0s 600000s, color 0s 600000s;
+  /* The cover follows the container's own .15s change (focus), so the
+     two never show as separate pieces. */
+  transition: background-color 0s 600000s, color 0s 600000s, box-shadow .15s ease, -webkit-box-shadow .15s ease;
 }
 /* A field without a label (the storage size): the value sits centred. */
 .field-plain { min-height: 48px; }
@@ -1001,9 +1000,6 @@ kbd {
   outline: none;
   transition: background-color .15s ease;
 }
-@media (hover: hover) {
-  .code-digit:hover { --field-c: color-mix(in srgb, var(--on-surface) 6%, var(--field-base)); }
-}
 .code-digit:focus { --field-c: color-mix(in srgb, var(--accent) 14%, var(--field-base)); }
 .code-error { margin: 0 0 16px; font-size: 14px; line-height: var(--lh-m); color: var(--error); text-align: center; }
 .code-password-row { margin-bottom: 16px; }
@@ -1093,9 +1089,6 @@ body.has-modal { overflow: hidden; }
   transition: background-color .15s ease;
 }
 .text-area::placeholder { color: var(--on-surface-variant); opacity: 1; }
-@media (hover: hover) {
-  .text-area:hover { --field-c: color-mix(in srgb, var(--on-surface) 6%, var(--field-base)); }
-}
 .text-area:focus { --field-c: color-mix(in srgb, var(--accent) 14%, var(--field-base)); }
 
 .confirm-actions { display: flex; gap: 12px; margin-top: 20px; }
@@ -1419,6 +1412,7 @@ html.has-scrollbar .scrollbar.is-idle { visibility: hidden; pointer-events: none
   .admin-table td, .theme-auto, .ripple-surface::before, .modal,
   #navbar .ghost, .cta-hint .ghost, .dd-item, .lang-btn .chevron,
   html.has-scrollbar .scrollbar, .scrollbar-thumb { transition: none; }
+  .field input:-webkit-autofill { transition: background-color 0s 600000s, color 0s 600000s; }
 }
 
 /* The admin lists come a page at a time. */
