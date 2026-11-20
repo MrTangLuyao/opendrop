@@ -296,6 +296,22 @@
   /* Nothing stale in a view about to show (the dialogs call this). */
   OD.dropRipples = root => root.querySelectorAll('.ripple').forEach(r => r.remove());
 
+  /* ─── Text fields ───
+     A field is a label around its input. A press on the label's own area
+     (the icon, the edges beside the input) lands on something that cannot
+     hold the focus: the input lost it on the press and only got it back
+     on the release, so the field flashed. The press is handed straight
+     to the input instead, as if the input filled the whole field. */
+  document.addEventListener('mousedown', e => {
+    if (e.button !== 0 || !(e.target instanceof Element)) return;
+    const field = e.target.closest('.field');
+    if (!field || e.target.closest('input, textarea, select, button, a')) return;
+    const input = field.querySelector('input:not([type="hidden"]), textarea');
+    if (!input || input.disabled) return;
+    e.preventDefault();
+    if (document.activeElement !== input) input.focus({ preventScroll: true });
+  });
+
   /* ─── Loading ───
      Anything that waits on the server says so, the M3 way: an
      indeterminate circular indicator, in an area with 加载中 under it,
