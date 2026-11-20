@@ -243,6 +243,10 @@
   /* ─── Ripple on every .ripple-surface: one delegated listener, so rows
      built later ripple too. Touch and mouse both arrive as pointerdown. ─── */
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+  /* In view: has a box (nothing up the tree is display:none) and is not
+     hidden by visibility (a closed menu, the send hint). */
+  const onScreen = el => el.isConnected && el.getClientRects().length > 0 &&
+    getComputedStyle(el).visibility !== 'hidden';
   document.addEventListener('pointerdown', e => {
     if (e.button !== 0 || reduced.matches) return;
     const el = e.target.closest && e.target.closest('.ripple-surface');
@@ -257,16 +261,18 @@
     circle.className = 'ripple';
     el.querySelectorAll(':scope > .ripple').forEach(r => r.remove());
     el.appendChild(circle);
-    const done = () => { circle.remove(); };
-    /* Played with the Web Animations API, not a CSS animation: a CSS
-       animation is dropped when its surface is hidden and starts over
-       from the beginning when the surface shows again, so a ripple left
-       in a closed dialog would replay on reopening. A script animation
-       keeps its own clock and finishes on time either way; whatever is
-       still there when its container hides is removed below. */
+    let live = true;
+    const done = () => { live = false; circle.remove(); };
+    /* The look belongs to the stylesheet (.ripple and its overrides: the
+       bar and the send hint have their own colour and strength). The
+       script only plays it: from that look, growing to four times the
+       size while fading to nothing over 600 ms, exactly what the CSS
+       keyframes did. It is played by script because a CSS animation
+       starts over from the beginning when a hidden surface shows again. */
     if (typeof circle.animate === 'function') {
+      const o = parseFloat(getComputedStyle(circle).opacity);
       const anim = circle.animate(
-        [{ transform: 'scale(0)', opacity: 0.12 }, { transform: 'scale(4)', opacity: 0 }],
+        [{ transform: 'scale(0)', opacity: Number.isFinite(o) ? o : 0.12 }, { transform: 'scale(4)', opacity: 0 }],
         { duration: 600, easing: 'linear', fill: 'forwards' });
       anim.finished.then(done, done);
     } else {
@@ -275,37 +281,20 @@
       circle.addEventListener('animationcancel', done, { once: true });
     }
     setTimeout(done, 700);
+    /* A ripple lives only while its surface stays in view. It plays on
+       through a menu's fade out, as it always did, but once the surface
+       is really gone (a dialog closed, a card or a tab changed, a menu
+       hidden) the ripple goes with it, so nothing is left to play when
+       the surface shows again. */
+    const watch = () => {
+      if (!live) return;
+      if (!onScreen(el)) { done(); return; }
+      requestAnimationFrame(watch);
+    };
+    requestAnimationFrame(watch);
   }, { passive: true });
-
-  /* Whatever hides (the hidden attribute, a view losing is-active, a menu
-     losing is-open) drops its transient effects at once: no ripple and no
-     half played fade survives to replay when it shows again. One observer
-     covers every dialog, card, panel and menu, present and future. */
-  const settle = root => {
-    root.querySelectorAll('.ripple').forEach(r => r.remove());
-    if (root.classList) root.classList.remove('is-fading-in');
-    root.querySelectorAll('.is-fading-in').forEach(n => n.classList.remove('is-fading-in'));
-  };
-  OD.settleEffects = settle;
-  const lost = (m, cls) => (m.oldValue || '').split(/\s+/).includes(cls) && !m.target.classList.contains(cls);
-  new MutationObserver(list => {
-    for (const m of list) {
-      const t = m.target;
-      if (!(t instanceof Element)) continue;
-      const hid = m.attributeName === 'hidden'
-        ? t.hidden
-        : lost(m, 'is-active') || lost(m, 'is-open');
-      if (hid) settle(t);
-    }
-  }).observe(document.documentElement, {
-    subtree: true, attributes: true, attributeOldValue: true, attributeFilter: ['hidden', 'class']
-  });
-  /* The send hint opens on hover rather than by an attribute: it settles
-     as soon as the pointer leaves. */
-  document.querySelectorAll('.cta-with-hint').forEach(w => {
-    const hint = w.querySelector('.cta-hint');
-    if (hint) w.addEventListener('mouseleave', () => settle(hint));
-  });
+  /* Nothing stale in a view about to show (the dialogs call this). */
+  OD.dropRipples = root => root.querySelectorAll('.ripple').forEach(r => r.remove());
 
   /* ─── Loading ───
      Anything that waits on the server says so, the M3 way: an
@@ -502,7 +491,7 @@
     });
   }
   OD.openModal = (el, focusEl, returnTo) => {
-    if (el.hidden) el.odOpener = returnTo || document.activeElement;
+    if (el.hidden) { el.odOpener = returnTo || document.activeElement; OD.dropRipples(el); }
     el.hidden = false;
     document.body.classList.add('has-modal');
     syncInert();
