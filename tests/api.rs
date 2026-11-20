@@ -1221,8 +1221,26 @@ async fn text_parcels() {
     let s = start().await;
     let c = Client::new(&s);
     let text = "héllo\n世界 \"quoted\" \\ end";
+    // defaults when the fields are left out: 20 downloads, 48 hours
+    let before = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .expect("clock")
+        .as_millis() as i64;
+    let d = c
+        .post("/api/parcels", &json!({"kind":"text","text": "d"}))
+        .await
+        .json();
+    assert_eq!(d["downloads_left"], 20);
+    let left_ms = d["expires_at"].as_i64().expect("expires_at") - before;
+    assert!(
+        (47 * 3_600_000..=49 * 3_600_000).contains(&left_ms),
+        "{left_ms}"
+    );
     let r = c
-        .post("/api/parcels", &json!({"kind":"text","text": text}))
+        .post(
+            "/api/parcels",
+            &json!({"kind":"text","text": text, "downloads": 2}),
+        )
         .await;
     assert_eq!(r.status, 201);
     let v = r.json();

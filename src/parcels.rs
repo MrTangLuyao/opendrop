@@ -34,6 +34,9 @@ use crate::util::{
 };
 
 pub const MAX_FILES: usize = 1000;
+/// Defaults when the sender leaves the fields out (the web form uses the same).
+pub const DEFAULT_DOWNLOADS: i64 = 20;
+pub const DEFAULT_EXPIRY_HOURS: i64 = 48;
 pub const MAX_TEXT_BYTES: usize = MIB as usize;
 pub const MAX_DOWNLOADS: i64 = 999;
 pub const MAX_PASSWORD_CHARS: usize = 128;
@@ -414,12 +417,14 @@ pub async fn create(app: &Arc<App>, ctx: &Ctx, req: Req) -> HResult {
     }
     let _buffer = big_body_slot(app, ctx, req.headers()).await?;
     let body: CreateReq = read_json(req, CREATE_LIMIT, false).await?;
-    let downloads = body.downloads.unwrap_or(2);
+    let downloads = body.downloads.unwrap_or(DEFAULT_DOWNLOADS);
     if !(1..=MAX_DOWNLOADS).contains(&downloads) {
         return Err(AppError::bad_field("downloads"));
     }
     let max_hours = i64::from(s.max_expiry_hours);
-    let expiry_hours = body.expiry_hours.unwrap_or(24.min(max_hours));
+    let expiry_hours = body
+        .expiry_hours
+        .unwrap_or(DEFAULT_EXPIRY_HOURS.min(max_hours));
     if !(1..=max_hours).contains(&expiry_hours) {
         return Err(AppError::bad_field("expiry_hours"));
     }

@@ -509,15 +509,15 @@
      rule everywhere a parcel password is entered; only one made of
      nothing but spaces is refused, since it would read as no password. */
   const maxHours = () => (info ? info.max_expiry_hours : 168);
-  const defaultOpts = () => ({ password: '', downloads: 2, expiry_hours: Math.min(24, maxHours()) });
+  const defaultOpts = () => ({ password: '', downloads: 20, expiry_hours: Math.min(48, maxHours()) });
   function readOpts() {
     const maxH = maxHours();
     const password = $('cfg-password').value;
     if (password !== '' && !password.trim()) { showUploadError(tr('err-password-blank')); return null; }
     const opts = {
       password,
-      downloads: clampInt($('cfg-downloads').value, 1, 999, 2),
-      expiry_hours: clampInt($('cfg-expiry').value, 1, maxH, Math.min(24, maxH))
+      downloads: clampInt($('cfg-downloads').value, 1, 999, 20),
+      expiry_hours: clampInt($('cfg-expiry').value, 1, maxH, Math.min(48, maxH))
     };
     $('cfg-downloads').value = opts.downloads;
     $('cfg-expiry').value = opts.expiry_hours;
