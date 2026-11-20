@@ -1,0 +1,50 @@
+[package]
+name = "opendrop"
+version = "2.0.0"
+edition = "2024"
+license = "MIT"
+description = "Self-hosted temporary file drop with six digit pickup codes"
+repository = "https://github.com/MrTangLuyao/opendrop"
+publish = false
+build = "build.rs"
+
+[dependencies]
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "net", "fs", "io-util", "signal", "time", "sync"] }
+hyper = { version = "1", features = ["server", "http1"] }
+hyper-util = { version = "0.1", features = ["tokio", "server", "http1", "server-graceful"] }
+http = "1"
+http-body = "1"
+http-body-util = "0.1"
+bytes = "1"
+rusqlite = { version = "0.43", features = ["bundled"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+argon2 = "0.6"
+sha2 = "0.11"
+getrandom = "0.4"
+subtle = "2"
+crc32fast = "1"
+qrcode = { version = "0.15", default-features = false, features = ["std"] }
+rustix = { version = "1", features = ["fs", "process"] }
+
+[build-dependencies]
+flate2 = "1"
+
+[profile.release]
+opt-level = 3
+lto = "fat"
+codegen-units = 1
+strip = true
+
+# Password hashing and checksums are far too slow unoptimised; keep tests fast.
+[profile.dev.package.argon2]
+opt-level = 3
+
+[profile.dev.package.blake2]
+opt-level = 3
+
+[profile.dev.package.crc32fast]
+opt-level = 3
+
+[profile.dev.package.sha2]
+opt-level = 3

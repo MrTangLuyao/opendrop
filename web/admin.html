@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>open.drop admin</title>
+  <meta name="theme-color" content="#FFFFFF">
+  <meta name="color-scheme" content="light dark">
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex">
+  <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
+  <!-- The theme first, so the page paints in it -->
+  <script src="/assets/theme.js"></script>
+  <link rel="stylesheet" href="/assets/od.css">
+  <script defer src="/assets/common.js"></script>
+  <script defer src="/assets/admin.js"></script>
+</head>
+<body class="admin-page">
+
+  <!-- Navbar, as on the homepage: the wordmark left; right, theme,
+       GitHub, back to the site, language and sign out -->
+  <header id="navbar" class="site-header">
+    <div class="nav">
+      <a id="brand" class="ghost brand-btn ripple-surface" href="/" aria-label="open.drop">
+        <span class="wordmark" data-site-name><span class="wm-name">open</span><span class="wm-dot">.</span><span class="wm-page">drop</span></span>
+        <span class="admin-badge" lang="en">admin</span>
+      </a>
+
+      <div class="nav-right">
+        <button id="theme-btn" class="ghost icon-btn ripple-surface" type="button" aria-label="外观">
+          <!-- Lucide `sun` and `moon` (ISC) -->
+          <svg class="icon theme-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+          <svg class="icon theme-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+          <span class="theme-auto" aria-hidden="true">A</span>
+        </button>
+        <a id="github-link" class="ghost icon-btn ripple-surface" href="https://github.com/MrTangLuyao/opendrop" target="_blank" rel="noopener noreferrer" data-i18n-label="github" aria-label="GitHub 仓库" title="GitHub">
+          <!-- Lucide `github` (ISC) -->
+          <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg>
+        </a>
+        <a href="/" class="ghost nav-link ripple-surface" id="back-to-app">
+          <!-- Lucide `arrow-left` (ISC) -->
+          <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+          <span data-i18n="nav-back-to-app">返回站点</span>
+        </a>
+        <!-- The language picker, laid out as on developer.android.com: the
+             mark, the language in use, a chevron; it opens a list of the
+             languages, each named in itself. -->
+        <div class="lang">
+          <button id="lang-btn" class="ghost lang-btn ripple-surface" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="lang-menu">
+            <!-- 文 and A in HarmonyOS Sans, set like the usual language icon. -->
+            <span class="lang-mark" aria-hidden="true"><span class="lm-zh">文</span><span class="lm-en">A</span></span>
+            <span id="lang-label">简体中文</span>
+            <!-- Lucide `chevron-down` (ISC) -->
+            <svg class="icon chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          <div id="lang-menu" class="dropdown lang-menu" role="menu">
+            <button type="button" class="dd-item ripple-surface" role="menuitemradio" aria-checked="false" data-lang="en" lang="en">English</button>
+            <button type="button" class="dd-item ripple-surface" role="menuitemradio" aria-checked="true" data-lang="zh" lang="zh-CN">简体中文</button>
+          </div>
+        </div>
+        <button id="admin-logout" class="ghost nav-link ripple-surface" type="button" hidden>
+          <!-- Lucide `log-out` (ISC) -->
+          <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/></svg>
+          <span data-i18n="nav-logout">登出</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- Until the server says who is signed in, neither stage shows;
+         a long wait shows the loader here -->
+    <div id="admin-boot"></div>
+
+    <section id="admin-login" class="admin-stage">
+      <div class="card admin-card">
+        <h2 data-i18n="login-title">管理员登录</h2>
+        <p class="card-sub"><span data-i18n="login-sub-a">用户名默认为 admin，初始密码在首次启动时打印到服务日志，忘记时可运行 </span><code>opendrop admin-reset</code><span data-i18n="login-sub-b"> 重置</span></p>
+        <label class="field">
+          <input id="admin-user" type="text" autocomplete="username" autocapitalize="off" spellcheck="false" maxlength="32" placeholder=" ">
+          <span class="field-label" data-i18n="cfg-username">用户名</span>
+        </label>
+        <label class="field">
+          <input id="admin-pass" type="password" autocomplete="current-password" maxlength="128" placeholder=" ">
+          <span class="field-label" data-i18n="cfg-password">密码</span>
+        </label>
+        <p class="card-error" id="admin-login-err" role="alert" hidden></p>
+        <button id="admin-login-submit" class="cta cta-primary card-cta ripple-surface" type="button"><span data-i18n="btn-login">登录</span></button>
+      </div>
+    </section>
+
+    <section id="admin-dashboard" class="admin-stage">
+
+      <div class="admin-tabs" role="tablist">
+        <button class="admin-tab ghost ripple-surface is-active" data-tab="stats" role="tab" aria-selected="true" data-i18n="tab-stats">概览</button>
+        <button class="admin-tab ghost ripple-surface" data-tab="parcels" role="tab" aria-selected="false" data-i18n="tab-parcels">所有包裹</button>
+        <button class="admin-tab ghost ripple-surface" data-tab="accounts" role="tab" aria-selected="false" data-i18n="tab-accounts">所有账号</button>
+        <button class="admin-tab ghost ripple-surface" data-tab="config" role="tab" aria-selected="false" data-i18n="tab-config">配置</button>
+        <button class="admin-tab ghost ripple-surface" data-tab="password" role="tab" aria-selected="false" data-i18n="tab-password">修改密码</button>
+      </div>
+
+      <div class="admin-panel is-active" data-panel="stats" role="tabpanel">
+        <h2 data-i18n="stats-title">系统概览</h2>
+        <div class="stat-grid" id="stat-grid"></div>
+      </div>
+
+      <div class="admin-panel" data-panel="parcels" role="tabpanel">
+        <h2 data-i18n="parcels-title">所有包裹</h2>
+        <p class="card-sub" id="parcels-meta"></p>
+        <div class="admin-table-wrap"><table class="admin-table" id="parcels-table">
+          <thead><tr>
+            <th data-i18n="th-code">取件码</th>
+            <th data-i18n="th-owner">所有者</th>
+            <th data-i18n="th-kind">类型</th>
+            <th data-i18n="th-size">大小</th>
+            <th data-i18n="th-downloads">剩余下载</th>
+            <th data-i18n="th-expires">过期时间</th>
+            <th data-i18n="th-actions">操作</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table></div>
+      </div>
+
+      <div class="admin-panel" data-panel="accounts" role="tabpanel">
+        <h2 data-i18n="accounts-title">所有账号</h2>
+        <p class="card-sub" id="accounts-meta"></p>
+        <div class="admin-table-wrap"><table class="admin-table" id="accounts-table">
+          <thead><tr>
+            <th lang="en">ID</th>
+            <th data-i18n="th-username">用户名</th>
+            <th data-i18n="th-parcels">包裹数</th>
+            <th data-i18n="th-storage">占用</th>
+            <th data-i18n="th-account-expires">账户到期</th>
+            <th data-i18n="th-actions">操作</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table></div>
+      </div>
+
+      <div class="admin-panel" data-panel="config" role="tabpanel">
+        <h2 data-i18n="config-title">限额配置</h2>
+        <p class="card-sub" data-i18n="config-sub">可在线修改，无需重启。</p>
+
+        <!-- The form waits, hidden, for the settings; the loader stands in -->
+        <div id="config-loader"></div>
+        <div class="panel-body" id="config-body" hidden>
+
+          <!-- Site name: the wordmark, the footer and the tab title -->
+          <div class="field-group">
+            <label class="field">
+              <input id="cfg-site-name" type="text" maxlength="32" required autocomplete="off" autocapitalize="off" spellcheck="false" placeholder=" " aria-describedby="cfg-site-name-support">
+              <span class="field-label" data-i18n="cfg-site-name">站点名称</span>
+            </label>
+            <p class="field-support" id="cfg-site-name-support" data-i18n="cfg-site-name-support">第一个点前后分开着色</p>
+          </div>
+
+          <!-- System storage: share of the disk or a fixed size -->
+          <div class="storage-ctl" id="storage-ctl">
+            <div class="storage-head">
+              <span class="storage-label" data-i18n="cfg-max-storage">系统总存储</span>
+              <div class="seg" role="radiogroup" id="storage-mode" data-i18n-label="cfg-max-storage">
+                <button type="button" class="seg-btn ripple-surface" role="radio" aria-checked="true" data-mode="percent" data-i18n="mode-percent">按硬盘比例</button>
+                <button type="button" class="seg-btn ripple-surface" role="radio" aria-checked="false" data-mode="bytes" data-i18n="mode-bytes">固定大小</button>
+              </div>
+            </div>
+            <div class="storage-body">
+              <div class="storage-line" id="storage-percent-line">
+                <input type="range" class="range" id="cfg-storage-percent" min="1" max="95" step="1" value="70" data-i18n-label="mode-percent">
+                <span class="storage-value tnum" id="storage-percent-value"></span>
+              </div>
+              <div class="storage-line" id="storage-bytes-line" hidden>
+                <label class="field field-plain storage-size">
+                  <input type="number" id="cfg-storage-size" min="0.07" step="any" inputmode="decimal" data-i18n-label="mode-bytes">
+                </label>
+                <div class="seg seg-unit" role="radiogroup" id="storage-unit">
+                  <button type="button" class="seg-btn ripple-surface" role="radio" aria-checked="true" data-unit="GB" lang="en">GB</button>
+                  <button type="button" class="seg-btn ripple-surface" role="radio" aria-checked="false" data-unit="TB" lang="en">TB</button>
+                </div>
+              </div>
+              <div class="disk-bar" id="disk-bar" aria-hidden="true">
+                <span class="disk-seg disk-od" id="disk-od"></span><span class="disk-seg disk-other" id="disk-other"></span><span class="disk-mark" id="disk-mark"></span>
+              </div>
+              <div class="disk-legend">
+                <span class="lg lg-od"><i aria-hidden="true"></i><span id="lg-od"></span></span>
+                <span class="lg lg-other"><i aria-hidden="true"></i><span id="lg-other"></span></span>
+                <span class="lg lg-free"><i aria-hidden="true"></i><span id="lg-free"></span></span>
+                <span class="lg lg-quota"><i aria-hidden="true"></i><span id="lg-quota"></span></span>
+              </div>
+              <p class="cfg-warn" id="storage-warn" role="status" hidden></p>
+            </div>
+          </div>
+
+          <label class="field">
+            <input id="cfg-max-upload" type="number" min="0.01" step="any" inputmode="decimal" placeholder=" ">
+            <span class="field-label" data-i18n="cfg-max-upload">单次上传 (GB)</span>
+          </label>
+          <label class="field">
+            <input id="cfg-max-expiry" type="number" min="1" max="8760" step="1" inputmode="numeric" placeholder=" ">
+            <span class="field-label" data-i18n="cfg-max-expiry">最长有效期（小时）</span>
+          </label>
+          <div class="switch-row">
+            <span class="switch-label" id="lbl-anon" data-i18n="cfg-anon">允许匿名上传</span>
+            <button type="button" class="switch" id="cfg-anon" role="switch" aria-checked="true" aria-labelledby="lbl-anon"><span class="knob"></span></button>
+          </div>
+          <div class="switch-row">
+            <span class="switch-label" id="lbl-reg" data-i18n="cfg-registration">允许注册</span>
+            <button type="button" class="switch" id="cfg-registration" role="switch" aria-checked="true" aria-labelledby="lbl-reg"><span class="knob"></span></button>
+          </div>
+          <p class="card-error" id="config-err" role="alert" hidden></p>
+          <button id="config-save" class="cta cta-primary card-cta ripple-surface" type="button"><span data-i18n="btn-save">保存</span></button>
+        </div>
+      </div>
+
+      <div class="admin-panel" data-panel="password" role="tabpanel">
+        <h2 data-i18n="password-title">修改管理员账号</h2>
+        <p class="card-sub" data-i18n="password-sub">填写当前密码；用户名或新密码留空则保持不变，新密码至少 8 位，修改后其他已登录的管理员会话会退出</p>
+        <label class="field">
+          <input id="pw-username" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" maxlength="32" placeholder=" ">
+          <span class="field-label" data-i18n="new-username">新用户名（可选）</span>
+        </label>
+        <label class="field">
+          <input id="pw-current" type="password" autocomplete="current-password" maxlength="128" placeholder=" ">
+          <span class="field-label" data-i18n="current-password">当前密码</span>
+        </label>
+        <label class="field">
+          <input id="pw-next" type="password" autocomplete="new-password" maxlength="128" placeholder=" ">
+          <span class="field-label" data-i18n="new-password">新密码</span>
+        </label>
+        <p class="card-error" id="pw-err" role="alert" hidden></p>
+        <button id="pw-save" class="cta cta-primary card-cta ripple-surface" type="button"><span data-i18n="btn-save">保存</span></button>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- Admin edit-parcel modal, opened by the edit button in the parcels table -->
+  <div id="admin-edit-parcel-modal" class="modal" hidden>
+    <div class="modal-backdrop" data-action="admin-edit-parcel-close"></div>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="admin-edit-title">
+      <button class="card-close ghost icon-btn ripple-surface" type="button" data-action="admin-edit-parcel-close" data-i18n-label="close" aria-label="Close">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+      <h2 id="admin-edit-title" data-i18n="edit-parcel-title">编辑包裹</h2>
+      <p class="card-sub" id="admin-edit-parcel-meta"></p>
+
+      <!-- Each field ends in a text button that sets it to a special value -->
+      <label class="field field-with-action">
+        <svg class="icon field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        <span class="field-box">
+          <input type="number" id="admin-edit-expiry-hours" min="1" max="876000" step="1" inputmode="numeric" placeholder=" ">
+          <span class="field-label" data-i18n="edit-expiry">有效期 (小时)</span>
+        </span>
+        <button type="button" class="quick-set ripple-surface" id="btn-admin-set-permanent" data-i18n="btn-mark-permanent">设为永久</button>
+      </label>
+      <label class="field field-with-action">
+        <svg class="icon field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>
+        <span class="field-box">
+          <input type="number" id="admin-edit-downloads" min="1" max="999999" step="1" inputmode="numeric" placeholder=" ">
+          <span class="field-label" data-i18n="edit-downloads">剩余下载次数</span>
+        </span>
+        <button type="button" class="quick-set ripple-surface" id="btn-admin-set-unlimited" data-i18n="btn-mark-unlimited">设为无限</button>
+      </label>
+      <label class="field field-with-action">
+        <svg class="icon field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <span class="field-box">
+          <input type="password" id="admin-edit-password" autocomplete="new-password" maxlength="128" placeholder=" ">
+          <span class="field-label" data-i18n="edit-password">修改密码</span>
+        </span>
+        <button type="button" class="quick-set ripple-surface" id="btn-admin-clear-password" data-i18n="btn-clear-password">清除密码</button>
+      </label>
+
+      <p class="card-error" id="admin-edit-parcel-err" role="alert" hidden></p>
+      <button id="btn-admin-edit-parcel-save" class="cta cta-primary card-cta ripple-surface" type="button"><span data-i18n="btn-save">保存</span></button>
+    </div>
+  </div>
+
+  <!-- Confirm modal (delete a parcel or an account) -->
+  <div id="confirm-modal" class="modal" hidden>
+    <div class="modal-backdrop" data-action="confirm-cancel"></div>
+    <div class="modal-card" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" aria-describedby="confirm-message">
+      <button class="card-close ghost icon-btn ripple-surface" type="button" data-action="confirm-cancel" data-i18n-label="close" aria-label="Close">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+      <h2 id="confirm-title"></h2>
+      <p class="card-sub" id="confirm-message"></p>
+      <div class="confirm-actions">
+        <button class="cta cta-tonal ripple-surface" type="button" data-action="confirm-cancel"><span data-i18n="btn-cancel">取消</span></button>
+        <button id="btn-confirm-ok" class="cta cta-primary ripple-surface" type="button"><span data-i18n="btn-delete">删除</span></button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="site-footer"><span id="admin-footer" class="foot-line" lang="en"><span data-site-name-text>open.drop</span><span>admin</span></span></footer>
+</body>
+</html>

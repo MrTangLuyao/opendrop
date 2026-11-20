@@ -1,10 +1,8 @@
-node_modules/
-data/
+/target/
+/data/
+.env
+.env.local
 *.log
 .DS_Store
 Thumbs.db
-.env
-.env.local
-
-# IDE / local-only Claude Code config (contains absolute paths)
-.claude/settings.local.json
+__pycache__/

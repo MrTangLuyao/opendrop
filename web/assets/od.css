@@ -1,0 +1,1479 @@
+/* ============================================================
+ * web/assets/od.css
+ * opendrop's whole stylesheet: the homepage palette and fonts, worn
+ * as Material 3 components (filled fields with floating labels, pill
+ * buttons, state layers, tonal surfaces). There are no lines anywhere:
+ * structure comes from tonal fills, spacing and soft elevation shadows.
+ * Light and dark; theme.js sets the theme in effect before first paint.
+ * ============================================================ */
+
+/* ─── Fonts ───
+   Smiley Sans for the display heads (Latin only), JetBrains Mono for
+   all other Latin and the UI, HarmonyOS Sans SC for Han and Chinese
+   punctuation. The HarmonyOS chunks cover any Chinese a file name may
+   bring; ui.woff2, declared last, holds every Han character the UI
+   itself shows (tools/font-ui.py), so the interface never pulls a
+   chunk. */
+@font-face {
+  font-family: 'Smiley Sans';
+  font-weight: 400; font-display: swap;
+  src: url('/assets/fonts/smiley/SmileySans-latin.woff2') format('woff2');
+  unicode-range: U+0, U+20-7E, U+C0-CB, U+D1-D6, U+D8-DE, U+E0-EC, U+F1-F6, U+F8-106, U+10A, U+10C, U+112-113, U+116-11B, U+11D-123, U+12F, U+131-133, U+136-137, U+139, U+13B, U+13D, U+141, U+143-148, U+14C-15B, U+15E-165, U+167-168, U+16A, U+16E, U+170, U+172, U+174-17E, U+18F, U+1A0-1A1, U+1AF, U+1CD-1CE, U+1D1-1DC, U+218-21B, U+237, U+259;
+}
+@font-face {
+  font-family: 'Smiley Sans';
+  font-weight: 400; font-display: swap;
+  src: url('/assets/fonts/smiley/SmileySans-punct.woff2') format('woff2');
+  unicode-range: U+2013-2014, U+2018-2019, U+201C-201D, U+2022, U+2026;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-weight: 400; font-display: swap;
+  src: url('/assets/fonts/JetBrainsMono.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-weight: 700; font-display: swap;
+  src: url('/assets/fonts/JetBrainsMono-Bold.woff2') format('woff2');
+}
+/* harmony:start (written by tools/harmony-split.py) */
+@font-face { font-family: 'HarmonyOS Sans SC'; font-weight: 100 900; font-display: swap; src: url('/assets/fonts/harmony/site.woff2') format('woff2'); unicode-range: U+41, U+61, U+3001-3002, U+4E00, U+4E16, U+4E2A, U+4E2D, U+4E3B, U+4E60, U+4E66, U+4E8E, U+4EA4, U+4ECA, U+4ED3, U+4EF6, U+4EFF, U+4F1A, U+4F20, U+4F53, U+4F5C, U+5012, U+50CF, U+5177, U+5355, U+535A, U+5361, U+53E4, U+53F0, U+5408, U+547C, U+54C8, U+56DE, U+56FE, U+5728, U+5730, U+58A8, U+58C1, U+590D, U+5916, U+5929, U+5934, U+59CB, U+5B66, U+5B98, U+5B9E, U+5BA2, U+5BFC, U+5C01, U+5C0F, U+5C14, U+5C3D, U+5C45, U+5C9B, U+5DE5, U+5DF4, U+5E73-5E74, U+5E93-5E94, U+5F00, U+5F15, U+5F97, U+5FC5, U+5FEB, U+602A, U+610F, U+6211, U+6237, U+6253, U+6280, U+6295, U+62CD, U+62DB, U+63D2, U+641C, U+6495, U+6536, U+655E, U+6587, U+65B9, U+65C5, U+65E0, U+65E5, U+6613, U+662F, U+6708-6709, U+672C, U+672F, U+6765, U+684C, U+6A21, U+6B66, U+6BCF, U+6C49, U+6D41, U+6D77, U+6E90, U+7269, U+73AB, U+73B0, U+7470, U+751F, U+7528, U+754C, U+7684, U+76EE, U+7A0B, U+7A7A, U+7AD9, U+7AEF, U+7B80, U+7BB1, U+7D22, U+7E41, U+7EA2, U+7EB8, U+7EBF, U+7EC8, U+7F13, U+7F16, U+7F51, U+8005, U+81EA, U+822A, U+83DC, U+88C2, U+89C2, U+89E3, U+8A00, U+8BA1, U+8BBA, U+8BBE, U+8BED, U+8DEF, U+8FD8, U+9002, U+90AE, U+90FD, U+91CF, U+9762, U+9875, U+9879, U+987F, U+98A0, U+9A6C, U+9AD4, U+9ED1, U+FF08-FF09, U+FF0C, U+FF1A; }
+@font-face { font-family: 'HarmonyOS Sans SC'; font-weight: 100 900; font-display: swap; src: url('/assets/fonts/harmony/4e00.woff2') format('woff2'); unicode-range: U+4E01-4E15, U+4E17-4E29, U+4E2B-4E2C, U+4E2E-4E3A, U+4E3C-4E5F, U+4E61-4E65, U+4E67-4E8D, U+4E8F-4EA3, U+4EA5-4EC9, U+4ECB-4ED2, U+4ED4-4EF5, U+4EF7-4EFE, U+4F00-4F19, U+4F1B-4F1F, U+4F21-4F52, U+4F54-4F5B, U+4F5D-4FFF; }
+@font-face { font-family: 'HarmonyOS Sans SC'; font-weight: 100 900; font-display: swap; src: url('/assets/fonts/harmony/5000.woff2') format('woff2'); unicode-range: U+5000-5011, U+5013-50CE, U+50D0-5176, U+5178-51FF; }
+@font-face { font-family: 'HarmonyOS Sans SC'; font-weight: 100 900; font-display: swap; src: url('/assets/fonts/harmony/5200.woff2') format('woff2'); unicode-range: U+5200-5354, U+5356-5359, U+535B-5360, U+5362-53E3, U+53E5-53EF, U+53F1-53FF; }
+@font-face { font-family: 'HarmonyOS Sans SC'; font-weight: 100 900; font-display: swap; src: url('/assets/fonts/harmony/5400.woff2') format('woff2'); unicode-range: U+5400-5407, U+5409-547B, U+547D-54C7, U+54C9-55FF; }
+@font-face { font-family: 'HarmonyOS Sans SC'; font-weight: 100 900; font-display: swap; src: url('/assets/fonts/harmony/5600.woff2') format('woff2'); unicode-range: U+5600-56DD, U+56DF-56FD, U+56FF-5727, U+5729-572F, U+5731-57FF; }
+@font-face { font-family: 'HarmonyOS Sans SC'; font-weight: 100 900; font-display: swap; src: url('/assets/fonts/harmony/5800.woff2') format('woff2'); unicode-range: U+5800-58A7, U+58A9-58C0, U+58C2-590C, U+590E-5915, U+5917-5928, U+592A-5933, U+5935-59CA, U+59CC-59FF; }
+@font-face { font-family: 'HarmonyOS Sans SC'; font-weight: 100 900; font-display: swap; src: url('/assets/fonts/harmony/5a00.woff2') format('woff2'); unicode-range: U+5A00-5B65, U+5B67-5B97, U+5B99-5B9D, U+5B9F-5BA1, U+5BA3-5BFB, U+5BFD-5BFF; }
+@font-face { font-family: 'HarmonyOS Sans SC'; font-weight: 100 900; font-display: swap; src: url('/assets/fonts/harmony/5c00.woff2') format('woff2'); unicode-range: U+5C00, U+5C02-5C0E, U+5C10-5C13, U+5C15-5C3C, U+5C3E-5C44, U+5C46-5C9A, U+5C9C-5DE4, U+5DE6-5DF3, U+5DF5-5DFF; }
+@font-face { font-family: 'HarmonyOS Sans SC'; font-weight: 100 900; font-display: swap; src: url('/assets/fonts/harmony/5e00.woff2') format('woff2'); unicode-range: U+5E00-5E72, U+5E75-5E92, U+5E95-5EFF, U+5F01-5F14, U+5F16-5F96, U+5F98-5FC4, U+5FC6-5FEA, U+5FEC-5FFF; }
+@font-face { font-family: 'HarmonyOS Sans SC'; font-weight: 100 900; font-display: swap; src: url('/assets/fonts/harmony/6000.woff2') format('woff2'); unicode-range: U+6000-6029, U+602B-610E, U+6110-61FF; }
+@font-face { font-family: 'HarmonyOS Sans SC'; font-weight: 100 900; font-display: swap; src: url('/assets/fonts/harmony/6200.woff2') format('woff2'); unicode-range: U+6200-6210, U+6212-6236, U+6238-6252, U+6254-627F, U+6281-6294, U+6296-62CC, U+62CE-62DA, U+62DC-63D1, U+63D3-63FF; }
+@font-face { font-family: 'HarmonyOS Sans SC'; font-weight: 100 900; font-display: swap; src: url('/assets/fonts/harmony/6400.woff2') format('woff2'); unicode-range: U+6400-641B, U+641D-6494, U+6496-6535, U+6537-655D, U+655F-6586, U+6588-65B8, U+65BA-65C4, U+65C6-65DF, U+65E1-65E4, U+65E6-65FF; }
+@font-face { font-family: 'HarmonyOS Sans SC'; font-weight: 100 900; font-display: swap; src: url('/assets/fonts/harmony/6600.woff2') format('woff2'); unicode-range: U+6600-6612, U+6614-662E, U+6630-6707, U+670A-672B, U+672D-672E, U+6730-6764, U+6766-67FF; }
+@font-face { font-family: 'HarmonyOS Sans SC'; font-weight: 100 900; font-display: swap; src: url('/assets/fonts/harmony/6800.woff2') format('woff2'); unicode-range: U+6800-684B, U+684D-69FF; }
+@font-face { font-family: 'HarmonyOS Sans SC'; font-weight: 100 900; font-display: swap; src: url('/assets/fonts/harmony/6a00.woff2') format('woff2'); unicode-range: U+6A00-6A20, U+6A22-6B65, U+6B67-6BCE, U+6BD0-6BFF; }
+@font-face { font-family: 'HarmonyOS Sans SC'; font-weight: 100 900; font-display: swap; src: url('/assets/fonts/harmony/6c00.woff2') format('woff2'); unicode-range: U+6C00-6C48, U+6C4A-6D40, U+6D42-6D76, U+6D78-6DFF; }
+@font-face { font-family: 'HarmonyOS Sans SC'; font-weight: 100 900; font-display: swap; src: url('/assets/fonts/harmony/6e00.woff2') format('woff2'); unicode-range: U+6E00-6E8F, U+6E91-6FFF; }
+@font-face { font-family: 'HarmonyOS Sans SC'; font-weight: 100 900; font-display: swap; src: url('/assets/fonts/harmony/7000.woff2') format('woff2'); unicode-range: U+7000-71FF; }
+@font-face { font-family: 'HarmonyOS Sans SC'; font-weight: 100 900; font-display: swap; src: url('/assets/fonts/harmony/7200.woff2') format('woff2'); unicode-range: U+7200-7268, U+726A-73AA, U+73AC-73AF, U+73B1-73FF; }
+@font-face { font-family: 'HarmonyOS Sans SC'; font-weight: 100 900; font-display: swap; src: url('/assets/fonts/harmony/7400.woff2') format('woff2'); unicode-range: U+7400-746F, U+7471-751E, U+7520-7527, U+7529-754B, U+754D-75FF; }
+@font-face { font-family: 'HarmonyOS Sans SC'; font-weight: 100 900; font-display: swap; src: url('/assets/fonts/harmony/7600.woff2') format('woff2'); unicode-range: U+7600-7683, U+7685-76ED, U+76EF-77FF; }
+@font-face { font-family: 'HarmonyOS Sans SC'; font-weight: 100 900; font-display: swap; src: url('/assets/fonts/harmony/7800.woff2') format('woff2'); unicode-range: U+7800-79FF; }
+@font-face { font-family: 'HarmonyOS Sans SC'; font-weight: 100 900; font-display: swap; src: url('/assets/fonts/harmony/7a00.woff2') format('woff2'); unicode-range: U+7A00-7A0A, U+7A0C-7A79, U+7A7B-7AD8, U+7ADA-7AEE, U+7AF0-7B7F, U+7B81-7BB0, U+7BB2-7BFF; }
+@font-face { font-family: 'HarmonyOS Sans SC'; font-weight: 100 900; font-display: swap; src: url('/assets/fonts/harmony/7c00.woff2') format('woff2'); unicode-range: U+7C00-7D21, U+7D23-7DFF; }
+@font-face { font-family: 'HarmonyOS Sans SC'; font-weight: 100 900; font-display: swap; src: url('/assets/fonts/harmony/7e00.woff2') format('woff2'); unicode-range: U+7E00-7E40, U+7E42-7EA1, U+7EA3-7EB7, U+7EB9-7EBE, U+7EC0-7EC7, U+7EC9-7F12, U+7F14-7F15, U+7F17-7F50, U+7F52-7FFF; }
+@font-face { font-family: 'HarmonyOS Sans SC'; font-weight: 100 900; font-display: swap; src: url('/assets/fonts/harmony/8000.woff2') format('woff2'); unicode-range: U+8000-8004, U+8006-81E9, U+81EB-81FF; }
+@font-face { font-family: 'HarmonyOS Sans SC'; font-weight: 100 900; font-display: swap; src: url('/assets/fonts/harmony/8200.woff2') format('woff2'); unicode-range: U+8200-8229, U+822B-83DB, U+83DD-83FF; }
+@font-face { font-family: 'HarmonyOS Sans SC'; font-weight: 100 900; font-display: swap; src: url('/assets/fonts/harmony/8400.woff2') format('woff2'); unicode-range: U+8400-85FF; }
+@font-face { font-family: 'HarmonyOS Sans SC'; font-weight: 100 900; font-display: swap; src: url('/assets/fonts/harmony/8600.woff2') format('woff2'); unicode-range: U+8600-87FF; }
+@font-face { font-family: 'HarmonyOS Sans SC'; font-weight: 100 900; font-display: swap; src: url('/assets/fonts/harmony/8800.woff2') format('woff2'); unicode-range: U+8800-88C1, U+88C3-89C1, U+89C3-89E2, U+89E4-89FF; }
+@font-face { font-family: 'HarmonyOS Sans SC'; font-weight: 100 900; font-display: swap; src: url('/assets/fonts/harmony/8a00.woff2') format('woff2'); unicode-range: U+8A01-8BA0, U+8BA2-8BB9, U+8BBB-8BBD, U+8BBF-8BEC, U+8BEE-8BFF; }
+@font-face { font-family: 'HarmonyOS Sans SC'; font-weight: 100 900; font-display: swap; src: url('/assets/fonts/harmony/8c00.woff2') format('woff2'); unicode-range: U+8C00-8DEE, U+8DF0-8DFF; }
+@font-face { font-family: 'HarmonyOS Sans SC'; font-weight: 100 900; font-display: swap; src: url('/assets/fonts/harmony/8e00.woff2') format('woff2'); unicode-range: U+8E00-8FD7, U+8FD9-8FFF; }
+@font-face { font-family: 'HarmonyOS Sans SC'; font-weight: 100 900; font-display: swap; src: url('/assets/fonts/harmony/9000.woff2') format('woff2'); unicode-range: U+9000-9001, U+9003-90AD, U+90AF-90FC, U+90FE-91CE, U+91D0-91FF; }
+@font-face { font-family: 'HarmonyOS Sans SC'; font-weight: 100 900; font-display: swap; src: url('/assets/fonts/harmony/9200.woff2') format('woff2'); unicode-range: U+9200-93FF; }
+@font-face { font-family: 'HarmonyOS Sans SC'; font-weight: 100 900; font-display: swap; src: url('/assets/fonts/harmony/9400.woff2') format('woff2'); unicode-range: U+9400-95FF; }
+@font-face { font-family: 'HarmonyOS Sans SC'; font-weight: 100 900; font-display: swap; src: url('/assets/fonts/harmony/9600.woff2') format('woff2'); unicode-range: U+9600-9761, U+9763-97FF; }
+@font-face { font-family: 'HarmonyOS Sans SC'; font-weight: 100 900; font-display: swap; src: url('/assets/fonts/harmony/9800.woff2') format('woff2'); unicode-range: U+9800-9874, U+9876-9878, U+987A-987E, U+9880-989F, U+98A1-99FF; }
+@font-face { font-family: 'HarmonyOS Sans SC'; font-weight: 100 900; font-display: swap; src: url('/assets/fonts/harmony/9a00.woff2') format('woff2'); unicode-range: U+9A00-9A6B, U+9A6D-9AD3, U+9AD5-9BFF; }
+@font-face { font-family: 'HarmonyOS Sans SC'; font-weight: 100 900; font-display: swap; src: url('/assets/fonts/harmony/9c00.woff2') format('woff2'); unicode-range: U+9C00-9DFF; }
+@font-face { font-family: 'HarmonyOS Sans SC'; font-weight: 100 900; font-display: swap; src: url('/assets/fonts/harmony/9e00.woff2') format('woff2'); unicode-range: U+9E00-9ED0, U+9ED2-9FFF; }
+@font-face { font-family: 'HarmonyOS Sans SC'; font-weight: 100 900; font-display: swap; src: url('/assets/fonts/harmony/misc.woff2') format('woff2'); unicode-range: U+3000, U+3003, U+3005-301B, U+301D-301E, U+3021-3029, U+303E, U+F9F1, U+FA0E-FA0F, U+FA11, U+FA13-FA14, U+FA1F, U+FA21, U+FA23-FA24, U+FA27-FA29, U+FF01-FF07, U+FF0A-FF0B, U+FF0D-FF19, U+FF1B-FF60, U+FFE0-FFE6; }
+/* harmony:end */
+/* ui-font:start (written by tools/font-ui.py) */
+@font-face { font-family: 'HarmonyOS Sans SC'; font-weight: 100 900; font-display: swap; src: url('/assets/fonts/harmony/ui.woff2') format('woff2'); unicode-range: U+41, U+3002, U+4E00, U+4E0A-4E0B, U+4E0D, U+4E14, U+4E2A, U+4E2D, U+4E34, U+4E3A, U+4E45, U+4E4B, U+4E86, U+4E8C, U+4E8E, U+4E9B, U+4ED3, U+4ED6, U+4EE5, U+4EF6, U+4EFB, U+4F1A, U+4F20, U+4F4D-4F4E, U+4F53, U+4F59, U+4F5C, U+4F7F, U+4F8B, U+4FDD, U+4FEE, U+503C, U+50A8, U+5141, U+5148, U+5165, U+5168, U+516D, U+5171, U+5173, U+5176, U+5185, U+518C-518D, U+5199, U+51ED, U+51FA-51FB, U+5206-5207, U+5219, U+521D, U+5220, U+5230, U+5236, U+523B, U+524D, U+5269-526A, U+529F-52A1, U+52A8, U+5305, U+5316, U+533F, U+5355, U+5360, U+5370, U+5373, U+53D1, U+53D6, U+53D8, U+53EA, U+53EF, U+53F7, U+540C-540E, U+542B, U+542F, U+5458, U+548C, U+5668, U+56DE, U+56FA, U+5728, U+578B, U+586B, U+5904, U+590D, U+5916, U+591A, U+5927, U+5929-592A, U+5931, U+5939, U+5982, U+59CB, U+5B57-5B58, U+5B8C, U+5B9A, U+5BB9, U+5BC6, U+5C0F, U+5C11, U+5C31, U+5DF2, U+5E93, U+5F00, U+5F53, U+5F55, U+5FD7-5FD9, U+603B, U+60A8, U+610F, U+6210-6211, U+6216, U+6237, U+6240, U+624B, U+6253, U+6258, U+628A, U+62D2, U+62D6, U+62E9, U+62FD, U+6301, U+6309, U+6362, U+63A5, U+64A4, U+64CD, U+6536, U+6539, U+653E, U+6548, U+6570, U+6587, U+65B0, U+65E0, U+65E5, U+65F6, U+662F, U+663E, U+6682, U+66F4, U+6700, U+6709, U+670D, U+671F, U+672A, U+672C, U+6743, U+677E-677F, U+67E5, U+6807, U+683C, U+6982, U+6B21, U+6B63-6B64, U+6BC1, U+6BD4, U+6C38, U+6CA1, U+6CD5, U+6CE8, U+6D45, U+6D88, U+6DF1, U+6DFB, U+6E05, U+6EE1, U+70B9, U+73B0, U+7406, U+751F, U+7528, U+7559, U+767B, U+7684, U+76D8, U+76F4, U+770B, U+7740, U+7801, U+786C, U+786E, U+78C1, U+793A, U+79D2, U+79F0, U+79FB, U+7A7A, U+7ACB, U+7AD9, U+7B26, U+7B2C, U+7B80, U+7BA1, U+7C7B, U+7CFB, U+7E41, U+7EA6, U+7EAF, U+7EBF, U+7EDC-7EDD, U+7EDF, U+7EEA, U+7EED, U+7EF4, U+7F16, U+7F51, U+7F6E, U+8005, U+80FD, U+81EA, U+81F3, U+8272, U+83DC, U+884C, U+8868, U+88AB, U+88F9, U+8981, U+89C2, U+89C8, U+8A00, U+8BA4, U+8BB0, U+8BB8, U+8BBE, U+8BD5, U+8BDD, U+8BE5, U+8BED, U+8BEF, U+8BF7, U+8D25-8D26, U+8D34, U+8D85, U+8DB3, U+8DDF, U+8F7D, U+8F91, U+8F93, U+8FC7, U+8FD0, U+8FD4, U+8FD8-8FD9, U+9000-9001, U+9009, U+90E8, U+90FD, U+914D, U+91CC-91CD, U+91CF, U+94FE, U+9500, U+9519, U+957F, U+95ED, U+95F4, U+9650, U+9664, U+968F, U+9700, U+9762, U+9875, U+9891, U+989D, U+9996, U+9ED8, U+FF08-FF09, U+FF0C, U+FF1A-FF1B, U+FF1F; }
+/* ui-font:end */
+
+/* ─── Colour roles (Material 3 names, louie palette) ───
+   surface is the canvas; the four containers step up from it (greyer
+   in light, lighter navy in dark). primary is the fill of the main
+   buttons (the same blue in both themes, as before); accent is primary
+   used as ink: text buttons, focused labels, carets, sliders. */
+:root {
+  color-scheme: light;
+
+  --surface: #FFFFFF;
+  --surface-container-lowest: #FFFFFF;
+  --surface-container-low: #F3F5F8;
+  --surface-container: #EDF0F4;
+  --surface-container-high: #E7EAEF;
+  --surface-container-highest: #E0E4EA;
+  --well: #E7E9EE;
+
+  --on-surface: #0E1A2B;
+  --on-surface-variant: #4D576A;
+  --subtle: #616B80;
+
+  --primary: #2C5A8C;
+  --on-primary: #FFFFFF;
+  --accent: #2C5A8C;
+  --primary-container: #DCE7F4;
+  --on-primary-container: #163059;
+  --secondary-container: #E1EBF7;
+  --on-secondary-container: #1F3F66;
+
+  --error: #9E4A30;
+  --warn: #8C6410;
+  --ok: #2F5D4F;
+  --inverse-surface: #263243;
+  --inverse-on-surface: #EEF1F6;
+  --scrim: rgba(0, 0, 0, .32);
+
+  /* Fields are the surface under them plus a little of this ink. */
+  --field-ink: #0E1A2B;
+  --disk-other: #B3B9C4;
+  /* The slider's active track: one solid colour, as an image layer. */
+  --fill-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='100%25' height='100%25' fill='%232C5A8C'/%3E%3C/svg%3E");
+
+  --brand-dot: #2F5D4F;
+  --hero-ink: rgba(14, 26, 43, .86);
+  --tone-0: #2F5D4F;
+  --tone-1: #8C6410;
+  --tone-2: #9E4A30;
+  --tone-3: #5E6A1A;
+  --tone-4: #2A6577;
+
+  --elev-1: 0 1px 3px rgba(14, 26, 43, .10), 0 1px 3px 1px rgba(14, 26, 43, .05);
+  --elev-2: 0 1px 3px rgba(14, 26, 43, .10), 0 2px 8px 2px rgba(14, 26, 43, .08);
+  --elev-3: 0 2px 4px rgba(14, 26, 43, .10), 0 6px 16px 4px rgba(14, 26, 43, .10);
+  --bar-shadow: 0 2px 8px rgba(14, 26, 43, .08);
+  /* The homepage's bar, menus and send hint (louie.css): ghost ink, the
+     grey under the pointer, the menu sheet and its rows, the ripple. */
+  --ghost-text: #3D485C;
+  --hover: #F4F5F8;
+  --muted: #5C6678;
+  --menu-surface: #FFFFFF;
+  --menu-hover: #F4F5F8;
+  --accent-dim: #E3EDFA;
+  --ripple: rgba(14, 26, 43, .08);
+  --menu-shadow: 0 8px 24px rgba(14, 26, 43, .16);
+  --scroll-thumb: rgba(97, 107, 128, .45);
+  --scroll-thumb-hover: rgba(97, 107, 128, .65);
+  --scroll-thumb-active: rgba(97, 107, 128, .8);
+
+  --font-sc: 'JetBrains Mono', 'HarmonyOS Sans SC', ui-monospace,
+    'Cascadia Mono', Consolas, 'SF Mono', Menlo, 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', monospace;
+  --font: var(--font-sc);
+  --font-display: 'Smiley Sans', 'JetBrains Mono', 'HarmonyOS Sans SC',
+    'PingFang SC', 'Microsoft YaHei', sans-serif;
+
+  /* Line heights for text that may wrap: the M3 body roles, a little
+     taller in Chinese. */
+  --lh-m: 20px;
+  --lh-s: 16px;
+
+  --nav-h: 56px;
+  --gutter: 16px;
+  --bar-x: 16px;
+
+  /* The colour a field is mixed over: the surface it sits on. */
+  --on-bg: var(--surface);
+  /* The empty part of a slider or a progress bar. */
+  --slider-track: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+:root:lang(zh) { --lh-m: 1.65; --lh-s: 1.6; }
+
+/* Dark: chosen by theme.js; the media query covers the moment before it
+   runs (and a page without scripts). Both blocks hold the same values. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --surface: #0A111C;
+    --surface-container-lowest: #060B13;
+    --surface-container-low: #111A27;
+    --surface-container: #152030;
+    --surface-container-high: #1A2738;
+    --surface-container-highest: #213046;
+    --well: #0F1825;
+    --on-surface: #E6EBF2;
+    --on-surface-variant: #A1ABBB;
+    --subtle: #8A94A6;
+    --accent: #6096D0;
+    --primary-container: #183152;
+    --on-primary-container: #C9DCF2;
+    --secondary-container: #1F3653;
+    --on-secondary-container: #B5D0EE;
+    --error: #E2896C;
+    --warn: #D6AA55;
+    --ok: #6FA593;
+    --inverse-surface: #E6EBF2;
+    --inverse-on-surface: #1A2738;
+    --scrim: rgba(0, 0, 0, .5);
+    --field-ink: #B4C8E6;
+    --disk-other: rgba(230, 235, 242, .28);
+    --fill-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='100%25' height='100%25' fill='%236096D0'/%3E%3C/svg%3E");
+    --brand-dot: #6FA593;
+    --hero-ink: rgba(230, 235, 242, .86);
+    --tone-0: #6FA593;
+    --tone-1: #D6AA55;
+    --tone-2: #E2896C;
+    --tone-3: #B6C266;
+    --tone-4: #6DAFC4;
+    --elev-1: 0 1px 3px rgba(0, 0, 0, .40), 0 1px 3px 1px rgba(0, 0, 0, .20);
+    --elev-2: 0 1px 3px rgba(0, 0, 0, .40), 0 2px 8px 2px rgba(0, 0, 0, .26);
+    --elev-3: 0 2px 4px rgba(0, 0, 0, .40), 0 6px 16px 4px rgba(0, 0, 0, .32);
+    --bar-shadow: 0 2px 8px rgba(0, 0, 0, .40);
+    --ghost-text: #9BA5B5;
+    --hover: #1A2738;
+    --muted: #9BA5B5;
+    --menu-surface: #131F2E;
+    --menu-hover: #1A2738;
+    --accent-dim: rgba(96, 150, 208, .16);
+    --ripple: rgba(230, 235, 242, .10);
+    --menu-shadow: 0 8px 24px rgba(0, 0, 0, .4);
+    --scroll-thumb: rgba(155, 165, 181, .35);
+    --scroll-thumb-hover: rgba(155, 165, 181, .55);
+    --scroll-thumb-active: rgba(155, 165, 181, .7);
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --surface: #0A111C;
+  --surface-container-lowest: #060B13;
+  --surface-container-low: #111A27;
+  --surface-container: #152030;
+  --surface-container-high: #1A2738;
+  --surface-container-highest: #213046;
+  --well: #0F1825;
+  --on-surface: #E6EBF2;
+  --on-surface-variant: #A1ABBB;
+  --subtle: #8A94A6;
+  --accent: #6096D0;
+  --primary-container: #183152;
+  --on-primary-container: #C9DCF2;
+  --secondary-container: #1F3653;
+  --on-secondary-container: #B5D0EE;
+  --error: #E2896C;
+  --warn: #D6AA55;
+  --ok: #6FA593;
+  --inverse-surface: #E6EBF2;
+  --inverse-on-surface: #1A2738;
+  --scrim: rgba(0, 0, 0, .5);
+  --field-ink: #B4C8E6;
+  --disk-other: rgba(230, 235, 242, .28);
+  --fill-img: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Crect width='100%25' height='100%25' fill='%236096D0'/%3E%3C/svg%3E");
+  --brand-dot: #6FA593;
+  --hero-ink: rgba(230, 235, 242, .86);
+  --tone-0: #6FA593;
+  --tone-1: #D6AA55;
+  --tone-2: #E2896C;
+  --tone-3: #B6C266;
+  --tone-4: #6DAFC4;
+  --elev-1: 0 1px 3px rgba(0, 0, 0, .40), 0 1px 3px 1px rgba(0, 0, 0, .20);
+  --elev-2: 0 1px 3px rgba(0, 0, 0, .40), 0 2px 8px 2px rgba(0, 0, 0, .26);
+  --elev-3: 0 2px 4px rgba(0, 0, 0, .40), 0 6px 16px 4px rgba(0, 0, 0, .32);
+  --bar-shadow: 0 2px 8px rgba(0, 0, 0, .40);
+  --ghost-text: #9BA5B5;
+  --hover: #1A2738;
+  --muted: #9BA5B5;
+  --menu-surface: #131F2E;
+  --menu-hover: #1A2738;
+  --accent-dim: rgba(96, 150, 208, .16);
+  --ripple: rgba(230, 235, 242, .10);
+  --menu-shadow: 0 8px 24px rgba(0, 0, 0, .4);
+  --scroll-thumb: rgba(155, 165, 181, .35);
+  --scroll-thumb-hover: rgba(155, 165, 181, .55);
+  --scroll-thumb-active: rgba(155, 165, 181, .7);
+}
+@media (min-width: 640px) {
+  :root { --gutter: 24px; --bar-x: 24px; }
+}
+
+/* ─── Base ─── */
+*, *::before, *::after { box-sizing: border-box; }
+html {
+  background: var(--surface);
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+body {
+  margin: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex; flex-direction: column;
+  background: var(--surface);
+  color: var(--on-surface);
+  font: 400 14px/var(--lh-m) var(--font);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-tap-highlight-color: transparent;
+  /* Chrome is not for copying; codes, names, links and fields are. */
+  -webkit-user-select: none;
+  user-select: none;
+}
+input, textarea, .sel { -webkit-user-select: text; user-select: text; }
+#navbar, main, .site-footer, .modal, #toast {
+  font-synthesis: none;
+  font-kerning: normal;
+  text-autospace: no-autospace;
+  text-spacing-trim: normal;
+}
+/* A mono space is a full character wide; in Chinese copy it is cut to
+   about the gap a typesetter leaves between Han and Latin. */
+:root:lang(zh) main, :root:lang(zh) .dropdown, :root:lang(zh) .modal-card,
+:root:lang(zh) #toast { word-spacing: -.3em; }
+:root:lang(zh) .pickup-code, :root:lang(zh) .parcel-code-label,
+:root:lang(zh) .tnum { word-spacing: normal; }
+
+h1, h2, h3, p, ul, figure { margin: 0; }
+ul { padding: 0; list-style: none; }
+a { color: inherit; text-decoration: none; }
+button {
+  margin: 0; padding: 0; border: 0;
+  background: none; color: inherit;
+  font: inherit; cursor: pointer;
+}
+/* Disabled, the M3 way: content at 38 %, a filled container at 12 %.
+   A button busy with its own request (.is-busy) is disabled too, but
+   keeps its look, so a quick answer leaves no trace. */
+button:disabled:not(.is-busy) {
+  cursor: default;
+  color: color-mix(in srgb, var(--on-surface) 38%, transparent);
+}
+input, textarea, select { margin: 0; font: inherit; color: inherit; }
+img, svg { display: block; flex-shrink: 0; }
+[hidden] { display: none !important; }
+
+/* Keyboard focus shows as a state layer (below), never as a ring. */
+:focus { outline: none; }
+
+.icon { width: 16px; height: 16px; }
+.tnum { font-variant-numeric: tabular-nums; }
+.muted { color: var(--on-surface-variant); }
+.sr {
+  position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+.offscreen { position: fixed; top: 0; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+
+/* ─── State layers and ripple (every interactive element) ───
+   A wash of the element's own text colour under its content: 8 % on
+   hover, 10 % on keyboard focus and while pressed. The ripple from
+   common.js spreads in the same colour. */
+.ripple-surface { position: relative; overflow: hidden; isolation: isolate; }
+.ripple-surface::before {
+  content: "";
+  position: absolute; inset: 0; z-index: -1;
+  border-radius: inherit;
+  background: currentColor;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .15s ease;
+}
+@media (hover: hover) {
+  .ripple-surface:hover::before { opacity: .08; }
+}
+.ripple-surface:focus-visible::before,
+.ripple-surface:active::before { opacity: .10; }
+.ripple-surface:disabled:not(.is-busy)::before { opacity: 0; }
+.ripple {
+  position: absolute; z-index: -1;
+  border-radius: 50%; transform: scale(0);
+  animation: ripple 600ms linear; pointer-events: none;
+  background-color: currentColor;
+  opacity: .12;
+}
+@keyframes ripple { to { transform: scale(4); opacity: 0; } }
+
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+/* ─── Text and icon buttons: no container, a pill state layer ─── */
+.ghost {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  height: 40px; padding: 0 12px;
+  border-radius: 999px;
+  color: var(--on-surface-variant);
+  font: 500 14px/20px var(--font);
+  white-space: nowrap;
+  transition: color .15s ease;
+}
+.icon-btn { width: 40px; min-width: 40px; padding: 0; }
+.icon-btn .icon { width: 20px; height: 20px; }
+
+/* ─── Navbar: the homepage's bar (lib/design/louie.css), without its
+   hairlines: 56px, the canvas colour, the homepage's content column with
+   the wordmark and the controls hanging 8px outside it, small ghost
+   controls (32px, 6px corners, a grey fill under the pointer). Once the
+   page scrolls, a soft shadow and no line. ─── */
+.site-header {
+  position: sticky; top: 0; z-index: 100;
+  background: var(--surface);
+  transition: box-shadow .15s ease;
+}
+.site-header.is-scrolled { box-shadow: var(--bar-shadow); }
+.nav {
+  --nav-gutter: 16px;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  height: var(--nav-h);
+  /* The bar spans the whole window: wordmark at the left edge, controls at
+     the right edge, as in the original layout. */
+  width: 100%;
+  padding-left: max(var(--nav-gutter), env(safe-area-inset-left, 0px));
+  padding-right: max(var(--nav-gutter), env(safe-area-inset-right, 0px));
+}
+@media (min-width: 640px) { .nav { --nav-gutter: 24px; } }
+@media (min-width: 1200px) { .nav { --nav-gutter: 40px; } }
+
+/* The homepage's ghost control, in the bar and in the send hint: no fill
+   until hovered, then a light grey; the ripple is a wash of ink. Keyboard
+   focus looks like the hover (opendrop draws no rings). */
+#navbar .ghost, .cta-hint .ghost {
+  gap: 0; height: 32px; padding: 0;
+  border-radius: 6px;
+  color: var(--ghost-text);
+  font: 400 13px/1.25 var(--font);
+  transition: background-color .15s ease, color .15s ease;
+}
+#navbar .ghost:active, .cta-hint .ghost:active { background: var(--hover); color: var(--on-surface); }
+@media (hover: hover) {
+  #navbar .ghost:hover, .cta-hint .ghost:hover { background: var(--hover); color: var(--on-surface); }
+}
+#navbar .ghost:focus-visible, .cta-hint .ghost:focus-visible { background: var(--hover); color: var(--on-surface); }
+#navbar .ripple-surface::before, .cta-hint .ripple-surface::before { content: none; }
+#navbar .ripple, .cta-hint .ripple { background-color: var(--ripple); opacity: 1; }
+#navbar .icon { width: 16px; height: 16px; }
+
+/* The wordmark sits on the content edge; its padding hangs outside. A
+   long site name gives way before the controls do. */
+#navbar .brand-btn {
+  gap: 4px; margin-left: -8px; min-width: 0; padding: 0 8px;
+  font-size: 15px; font-weight: 700;
+  color: var(--on-surface);
+}
+.wordmark { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wm-name { color: var(--on-surface); }
+.wm-dot { color: var(--brand-dot); }
+.wm-page { color: var(--ghost-text); font-weight: 400; }
+.admin-badge {
+  flex-shrink: 0;
+  margin-left: 4px; padding: 0 8px; border-radius: 999px;
+  font: 500 11px/18px var(--font);
+  color: var(--on-secondary-container); background: var(--secondary-container);
+}
+.lang-btn .chevron { color: var(--ghost-text); transition: transform .15s ease; }
+.lang-btn[aria-expanded="true"] .chevron { transform: rotate(180deg); }
+
+.nav-right {
+  display: flex; align-items: center; gap: 4px;
+  flex-shrink: 0;
+  margin-right: -8px;
+}
+#navbar .icon-btn { gap: 6px; width: auto; min-width: 32px; padding: 0 8px; }
+#navbar .nav-link { gap: 6px; padding: 0 12px; }
+
+/* The menus, as on the homepage (a Material menu: a 144px sheet with a
+   soft shadow, 8px of padding top and bottom, full-width rows; the row
+   under the pointer turns grey, the one in use takes the accent on a tint
+   of it), without the outline. */
+.dropdown {
+  position: absolute; top: 100%; left: 0; z-index: 110;
+  margin-top: 8px;
+  width: 144px; padding: 8px 0;
+  background: var(--menu-surface);
+  border-radius: 8px;
+  box-shadow: var(--menu-shadow);
+  overflow: hidden;
+  opacity: 0; visibility: hidden;
+  transition: opacity .2s ease, visibility 0s linear .2s;
+}
+.dropdown.is-open {
+  opacity: 1; visibility: visible;
+  transition-delay: 0s;
+}
+.dd-item {
+  display: block;
+  padding: 12px 16px;
+  font: 500 14px/1.25 var(--font);
+  /* JetBrains Mono ships Regular and Bold only; a hair of stroke gives
+     these rows the medium weight in between. */
+  -webkit-text-stroke: .35px currentColor;
+  color: var(--muted);
+  white-space: nowrap;
+  transition: background-color .2s ease, color .2s ease;
+}
+.dd-item:active { background: var(--menu-hover); color: var(--on-surface); }
+@media (hover: hover) {
+  .dd-item:hover { background: var(--menu-hover); color: var(--on-surface); }
+}
+.dd-item:focus-visible { background: var(--menu-hover); color: var(--on-surface); }
+.dd-item[aria-checked="true"],
+.dd-item[aria-checked="true"]:hover {
+  color: var(--accent); background: var(--accent-dim); font-weight: 700;
+}
+/* Rows that are buttons (the language list) look like the links. */
+button.dd-item {
+  width: 100%; margin: 0; border: 0;
+  background-color: transparent;
+  text-align: left; cursor: pointer;
+}
+
+/* The language picker: the mark, the language in use and a chevron;
+   its list hangs from the right edge. */
+.lang { position: relative; flex-shrink: 0; }
+#navbar .lang-btn { gap: 4px; padding: 0 8px; }
+.lang-btn .lang-mark { margin-right: 2px; }
+.lang-menu { left: auto; right: 0; }
+
+/* The language mark: 文 and A as HarmonyOS draws them (both in ui.woff2),
+   文 high on the left and A low on the right, in the same 16px square,
+   and the same footprint, as the icons beside it. */
+.lang-mark {
+  position: relative; flex: none;
+  width: 16px; height: 16px;
+  font-family: 'HarmonyOS Sans SC', sans-serif;
+  font-weight: 500; line-height: 1;
+}
+.lang-mark > span { position: absolute; }
+.lm-zh { left: 0; top: -1px; font-size: 11px; }
+.lm-en { right: -1px; bottom: -1px; font-size: 10px; }
+
+/* The theme button shows the appearance in effect: a sun in light, a
+   moon in dark, with a small A while it follows the system. */
+.theme-moon { display: none; }
+:root[data-theme="dark"] .theme-sun { display: none; }
+:root[data-theme="dark"] .theme-moon { display: block; }
+.theme-auto {
+  display: none;
+  position: absolute; left: calc(50% + 2px); top: calc(50% + 1px);
+  padding: 0 1px; border-radius: 3px;
+  font: 700 9px/1 var(--font);
+  background: var(--surface);
+  pointer-events: none;
+}
+:root[data-theme-mode="auto"] .theme-auto { display: block; }
+@media (hover: hover) {
+  #theme-btn:hover .theme-auto { background: var(--hover); }
+}
+#theme-btn:focus-visible .theme-auto { background: var(--hover); }
+
+/* The account menu (signed in) hangs from the menu button's right edge
+   and is as wide as its longest row. */
+.menu-wrap { position: relative; flex-shrink: 0; }
+.nav-menu { left: auto; right: 0; width: auto; min-width: 144px; }
+/* GitHub sits in the bar, and in this menu only on phones. */
+.nav-menu .dd-github { display: none; }
+/* An account that never expires has only sign out to offer, and a menu
+   never holds a single action: sign out sits in the bar instead (phones
+   below, where GitHub joins it, keep the menu with the two). */
+#navbar.is-direct .menu-wrap { display: none; }
+
+/* Touch screens get 44px targets everywhere. */
+@media (pointer: coarse) {
+  #navbar .ghost { height: 44px; }
+  #navbar .icon-btn { min-width: 44px; }
+}
+
+/* Phones, as on the homepage: 44px controls, icons without their words
+   (the language picker keeps its mark and chevron), and GitHub moves into
+   the account menu when there is one. */
+@media (max-width: 767px) {
+  #navbar .ghost { height: 44px; }
+  .nav-right { gap: 0; margin-right: -14px; }
+  #navbar .icon-btn, #navbar .nav-link { min-width: 44px; padding: 0 14px; }
+  #navbar .nav-link > span { display: none; }
+  #navbar .lang-btn { padding: 0 10px; }
+  #lang-label { display: none; }
+  #navbar.is-signed-in #github-link { display: none; }
+  .nav-menu .dd-github { display: block; }
+  #navbar.is-direct .menu-wrap { display: block; }
+  #navbar.is-direct #logout-btn { display: none; }
+}
+@media (max-width: 479px) {
+  .admin-badge { display: none; }
+}
+/* The narrowest phones keep the mark alone. */
+@media (max-width: 374px) {
+  #navbar .lang-btn { padding: 0 14px; }
+  .lang-btn .chevron { display: none; }
+}
+/* Below 345px five controls and the wordmark no longer fit at 44px: the
+   controls step down to 40px. */
+@media (max-width: 344px) {
+  .nav-right { margin-right: -12px; }
+  #navbar .icon-btn, #navbar .nav-link, #navbar .lang-btn { min-width: 40px; padding: 0 12px; }
+}
+
+.line { display: block; }
+
+/* The site name: common.js draws it from the last name this browser saw
+   (then the server's), so the default never flashes in its place; with
+   no script it shows after a second. */
+[data-site-name], [data-site-name-text] { animation: name-wait 1s step-end; }
+.has-name [data-site-name], .has-name [data-site-name-text] { animation: none; }
+@keyframes name-wait { from { visibility: hidden; } }
+
+/* ─── Main and the stages ─── */
+main {
+  flex: 1;
+  display: flex; align-items: center; justify-content: center;
+  padding: 40px var(--gutter) 48px;
+  padding-left: max(var(--gutter), env(safe-area-inset-left, 0px));
+  padding-right: max(var(--gutter), env(safe-area-inset-right, 0px));
+}
+.stage {
+  display: none;
+  width: 100%; max-width: 560px;
+  flex-direction: column; align-items: center;
+}
+.stage.is-active { display: flex; animation: fade-in .2s ease; }
+
+/* ─── Landing: the mark, the wordmark, two stacked buttons ─── */
+.brand-hero { text-align: center; margin-bottom: 56px; }
+.logo { width: 96px; height: 96px; margin: 0 auto 18px; }
+.logo svg { width: 100%; height: 100%; border-radius: 22px; }
+/* The hero headline's face: Smiley Sans, ink, the forest dot and word. */
+.hero-mark {
+  margin: 0 0 8px;
+  padding-left: .05em;
+  font-family: var(--font-display);
+  font-size: 64px; font-weight: 400; line-height: 1.1;
+  color: var(--hero-ink);
+}
+.hero-mark .w-dot { color: var(--brand-dot); }
+.hero-mark .w-accent { color: var(--tone-0); }
+.tagline { font-size: 14px; line-height: var(--lh-m); color: var(--on-surface-variant); }
+
+.cta-stack {
+  position: relative;
+  display: flex; flex-direction: column; gap: 16px;
+  width: 100%; max-width: 280px;
+}
+
+/* ─── Buttons ───
+   Filled (primary) and tonal (secondary container), both full pills
+   with no shadow; the landing pair is 48px, in cards and dialogs 44px.
+   Hover, focus and press are the state layer above. */
+.cta {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; height: 48px; padding: 0 24px;
+  border-radius: 999px;
+  font: 600 16px/24px var(--font);
+  white-space: nowrap;
+  transition: background-color .15s ease, color .15s ease;
+}
+.cta-primary { background: var(--primary); color: var(--on-primary); }
+.cta-tonal { background: var(--secondary-container); color: var(--on-secondary-container); }
+.cta:disabled:not(.is-busy), .btn-line:disabled:not(.is-busy) {
+  background: color-mix(in srgb, var(--on-surface) 12%, transparent);
+  color: color-mix(in srgb, var(--on-surface) 38%, transparent);
+}
+.card-cta, .confirm-actions .cta {
+  height: 44px; padding: 0 24px;
+  font-size: 14px; line-height: 20px;
+}
+.card-cta { margin-top: 8px; }
+
+/* Row actions (my files, the admin tables): small tonal pills; the
+   delete kind carries the error tone. */
+.btn-line {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  flex-shrink: 0;
+  height: 32px; padding: 0 12px;
+  border-radius: 999px;
+  background: var(--surface-container-highest);
+  color: var(--on-surface-variant);
+  font: 500 12px/16px var(--font);
+  white-space: nowrap;
+}
+.btn-line .icon { width: 16px; height: 16px; }
+.btn-line.icon-only { width: 32px; padding: 0; }
+.btn-line.danger {
+  background: color-mix(in srgb, var(--error) 12%, transparent);
+  color: var(--error);
+}
+
+/* ─── The send hint: a menu sheet beside the send button (below it on
+   narrow screens), shown on hover as before, in the homepage's menu style
+   (no outline). A transparent bridge spans the gap so the pointer can
+   travel into it. ─── */
+.cta-with-hint { position: relative; width: 100%; }
+.cta-hint {
+  position: absolute; top: 50%; left: calc(100% + 16px); z-index: 10;
+  width: 320px; max-width: calc(100vw - 32px);
+  padding: 12px 12px 8px;
+  transform: translateY(-50%);
+  text-align: left;
+  background: var(--menu-surface);
+  border-radius: 8px;
+  box-shadow: var(--menu-shadow);
+  opacity: 0; visibility: hidden;
+  transition: opacity .2s ease, visibility 0s linear .2s;
+}
+.cta-hint::before {
+  content: "";
+  position: absolute; left: -20px; top: 0; bottom: 0; width: 22px;
+}
+.cta-with-hint:hover .cta-hint,
+.cta-with-hint:has(:focus-visible) .cta-hint {
+  opacity: 1; visibility: visible;
+  transition-delay: 0s;
+}
+@media (max-width: 900px) {
+  .cta-hint {
+    top: calc(100% + 12px); left: 50%;
+    transform: translateX(-50%);
+  }
+  .cta-hint::before { left: 0; right: 0; width: auto; top: -14px; bottom: auto; height: 16px; }
+}
+.cta-hint ul {
+  padding: 0 4px 0 20px;
+  list-style: disc;
+  color: var(--muted);
+  font-size: 13px; line-height: 1.6;
+}
+.cta-hint li + li { margin-top: 4px; }
+.cta-hint li::marker { color: var(--subtle); }
+kbd {
+  display: inline-block;
+  padding: 0 5px;
+  border-radius: 4px;
+  background: var(--menu-hover);
+  color: var(--on-surface);
+  font: 400 12px/1.4 'JetBrains Mono', monospace;
+}
+.hint-row {
+  display: flex; gap: 4px;
+  margin: 10px -4px 0; padding-top: 8px;
+}
+.cta-hint .hint-chip { flex: 1; gap: 6px; padding: 0 8px; }
+.hint-chip .icon { width: 14px; height: 14px; }
+@media (pointer: coarse) {
+  .cta-hint .ghost { height: 44px; }
+}
+
+/* ─── Cards: a flat tonal fill on the canvas ─── */
+.card {
+  --on-bg: var(--surface-container-low);
+  display: none;
+  position: relative;
+  width: 100%;
+  padding: 32px 32px 28px;
+  border-radius: 24px;
+  background: var(--surface-container-low);
+}
+.stage .card[data-substate].is-active { display: block; animation: fade-in .2s ease; }
+.card-wide { max-width: 640px; }
+
+.card-close { position: absolute; top: 12px; right: 12px; z-index: 1; }
+
+.card h2, .modal-card h2 {
+  margin: 0 0 4px; padding: 0 40px;
+  font: 500 24px/32px var(--font);
+  text-align: center;
+  color: var(--on-surface);
+}
+.card-sub {
+  margin: 0 0 24px;
+  font-size: 14px; line-height: var(--lh-m);
+  color: var(--on-surface-variant);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.card-error {
+  margin: 0 0 16px; padding: 12px 16px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--error) 10%, transparent);
+  color: var(--error);
+  font-size: 14px; line-height: var(--lh-m);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+/* ─── Lists: rows on one tonal panel, apart by a little space; the row
+   under the pointer takes a state layer ─── */
+.file-list, .parcel-list {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 4px;
+  border-radius: 16px;
+  background: var(--surface-container);
+  overflow-y: auto;
+}
+.file-list { max-height: 240px; margin-bottom: 24px; }
+.parcel-list { max-height: 480px; }
+.file-list:empty, .parcel-list:empty { display: none; }
+
+.file-row {
+  display: flex; align-items: center; gap: 12px;
+  min-height: 48px; padding: 4px 4px 4px 8px;
+  border-radius: 12px;
+  transition: background-color .15s ease;
+}
+.file-row.is-click { cursor: pointer; }
+.file-row.is-click:active { background: color-mix(in srgb, var(--on-surface) 10%, transparent); }
+@media (hover: hover) {
+  .file-row.is-click:hover { background: color-mix(in srgb, var(--on-surface) 8%, transparent); }
+}
+.file-icon {
+  flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  background: var(--surface-container-highest);
+  color: var(--on-surface-variant);
+  font: 700 10px/1 var(--font);
+}
+.file-name {
+  flex: 1; min-width: 0;
+  color: var(--on-surface);
+  font-size: 14px; line-height: 20px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.file-size { flex-shrink: 0; color: var(--on-surface-variant); font-size: 12px; line-height: 16px; }
+.file-row .file-remove { flex-shrink: 0; width: 36px; min-width: 36px; height: 36px; }
+.file-row .file-remove .icon { width: 18px; height: 18px; }
+
+/* ─── Text fields: M3 filled, without the indicator line ───
+   A tonal container (the surface under it plus a little ink), a leading
+   icon, the label inside that floats to the top on focus or once there
+   is a value, the input in body large. Focus tints the container with
+   primary and colours the label; an invalid value turns them to the
+   error tone. A real placeholder only shows while focused. */
+.config-grid { display: flex; flex-direction: column; gap: 12px; margin-bottom: 24px; }
+.field-group { display: flex; flex-direction: column; }
+.field, .code-digit, .text-area, .switch-row, .storage-ctl {
+  --field-base: color-mix(in srgb, var(--field-ink) 7%, var(--on-bg));
+  --field-c: var(--field-base);
+}
+.field {
+  position: relative;
+  display: flex; align-items: center;
+  min-height: 56px; padding: 0 16px;
+  border-radius: 12px;
+  background-color: var(--field-c);
+  cursor: text;
+  transition: background-color .15s ease;
+}
+@media (hover: hover) {
+  .field:hover { --field-c: color-mix(in srgb, var(--on-surface) 6%, var(--field-base)); }
+}
+.field:has(input:focus) { --field-c: color-mix(in srgb, var(--accent) 14%, var(--field-base)); }
+.field-icon {
+  position: absolute; left: 14px; top: 50%;
+  width: 20px; height: 20px; margin-top: -10px;
+  color: var(--on-surface-variant);
+  pointer-events: none;
+}
+.field input {
+  flex: 1; min-width: 0; width: 100%;
+  height: 56px; padding: 24px 0 8px;
+  background: transparent; border: 0; border-radius: 0; outline: none;
+  color: var(--on-surface);
+  caret-color: var(--accent);
+  font: 400 16px/24px var(--font);
+  -webkit-appearance: none; appearance: none;
+}
+.field-icon + input, .field-icon + .field-box { margin-left: 36px; }
+.field-label {
+  position: absolute; left: 16px; right: 16px; top: 16px;
+  color: var(--on-surface-variant);
+  font: 400 16px/24px var(--font);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  pointer-events: none;
+  transition: top .15s ease, font-size .15s ease, line-height .15s ease, color .15s ease;
+}
+.field-icon ~ .field-label { left: 52px; }
+.field input:focus ~ .field-label,
+.field input:not(:placeholder-shown) ~ .field-label {
+  top: 8px;
+  font-size: 12px; line-height: 16px;
+}
+.field input:focus ~ .field-label { color: var(--accent); }
+.field input::placeholder { color: transparent; opacity: 1; transition: color .15s ease; }
+.field input:focus::placeholder { color: var(--subtle); }
+/* Numbers without the spinner arrows. */
+.field input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+.field input[type="number"]::-webkit-outer-spin-button,
+.field input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+/* Autofill keeps the field's own colours, not the browser's box. */
+.field input:-webkit-autofill {
+  -webkit-box-shadow: inset 0 0 0 100px var(--field-c);
+  box-shadow: inset 0 0 0 100px var(--field-c);
+  -webkit-text-fill-color: var(--on-surface);
+  caret-color: var(--accent);
+  transition: background-color 0s 600000s, color 0s 600000s;
+}
+/* A field without a label (the storage size): the value sits centred. */
+.field-plain { min-height: 48px; }
+.field-plain input { height: 48px; padding: 12px 0; }
+/* Error: a value outside the field's limits, once the user has typed. */
+.field:has(input:user-invalid) { --field-c: color-mix(in srgb, var(--error) 10%, var(--field-base)); }
+.field:has(input:user-invalid) .field-label { color: var(--error); }
+.field:has(input:user-invalid) input { caret-color: var(--error); }
+.field-group:has(input:user-invalid) .field-support { color: var(--error); }
+/* Supporting text under a field. */
+.field-support {
+  padding: 4px 16px 0;
+  font-size: 12px; line-height: var(--lh-s);
+  color: var(--on-surface-variant);
+}
+
+/* A trailing text button inside the field (设为永久, 设为无限, 清除密码).
+   The input and its label share a box, so the label stops short of the
+   button. Pressed, the field shows what it was set to: the label up,
+   the placeholder (永久, 无限) in view. */
+.field-with-action { padding-right: 4px; }
+.field-box { position: relative; flex: 1; min-width: 0; align-self: stretch; display: flex; }
+.field-box .field-label { left: 0; right: 8px; }
+.field-with-action:has(.quick-set[aria-pressed="true"]) .field-label {
+  top: 8px;
+  font-size: 12px; line-height: 16px;
+}
+.field-with-action:has(.quick-set[aria-pressed="true"]) input::placeholder { color: var(--on-surface-variant); }
+.quick-set {
+  flex-shrink: 0;
+  height: 40px; padding: 0 12px;
+  border-radius: 999px;
+  color: var(--accent);
+  font: 600 14px/20px var(--font);
+  white-space: nowrap;
+  transition: background-color .15s ease, color .15s ease;
+}
+.quick-set[aria-pressed="true"] { background: var(--secondary-container); color: var(--on-secondary-container); }
+
+/* ─── Uploading ─── */
+.progress-display { display: flex; flex-direction: column; align-items: center; padding: 16px 0 8px; }
+.progress-pct {
+  font: 700 56px/1 var(--font);
+  color: var(--on-surface);
+  font-variant-numeric: tabular-nums;
+}
+.progress-pct-unit { margin-left: 2px; font-size: 22px; font-weight: 400; color: var(--on-surface-variant); }
+.progress-bytes { margin-top: 12px; font-size: 14px; line-height: 20px; color: var(--on-surface-variant); font-variant-numeric: tabular-nums; }
+.progress-bar {
+  width: 100%; height: 4px; margin-top: 24px;
+  border-radius: 999px;
+  background: var(--slider-track);
+  overflow: hidden;
+}
+.progress-bar-fill {
+  width: 0; height: 100%;
+  border-radius: 999px;
+  background: var(--accent);
+}
+
+/* ─── Success ─── */
+.pickup-code {
+  padding: 12px 0 8px;
+  font: 700 36px/44px var(--font);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  color: var(--on-surface);
+  -webkit-user-select: all; user-select: all;
+}
+.success-hint { margin: 0 0 20px; font-size: 12px; line-height: var(--lh-s); color: var(--on-surface-variant); text-align: center; }
+.success-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-bottom: 16px; }
+.ghost.link-action { padding: 0 16px 0 12px; color: var(--accent); font-weight: 600; }
+.link-action .icon { width: 18px; height: 18px; }
+.qr-panel { display: flex; justify-content: center; padding: 8px 0 4px; }
+.qr-panel img {
+  width: 204px; height: 204px; padding: 12px;
+  border-radius: 16px;
+  background: #FFFFFF;
+}
+.success-share {
+  margin-top: 16px; padding: 12px 16px;
+  border-radius: 12px;
+  background: var(--surface-container-high);
+  font-size: 12px; line-height: var(--lh-s);
+  color: var(--on-surface-variant);
+  text-align: center;
+  word-break: break-all;
+  -webkit-user-select: all; user-select: all;
+}
+
+/* ─── Receive: six filled digit boxes ─── */
+.code-input-row { display: flex; justify-content: center; gap: 8px; margin-bottom: 24px; }
+.code-digit {
+  width: 48px; height: 64px; padding: 0;
+  background-color: var(--field-c);
+  border: 0; border-radius: 12px;
+  color: var(--on-surface);
+  font: 700 28px/36px var(--font);
+  text-align: center;
+  caret-color: var(--accent);
+  outline: none;
+  transition: background-color .15s ease;
+}
+@media (hover: hover) {
+  .code-digit:hover { --field-c: color-mix(in srgb, var(--on-surface) 6%, var(--field-base)); }
+}
+.code-digit:focus { --field-c: color-mix(in srgb, var(--accent) 14%, var(--field-base)); }
+.code-error { margin: 0 0 16px; font-size: 14px; line-height: var(--lh-m); color: var(--error); text-align: center; }
+.code-password-row { margin-bottom: 16px; }
+@media (max-width: 480px) {
+  .code-input-row { gap: 6px; }
+  .code-digit { width: 44px; height: 56px; font-size: 24px; }
+}
+
+/* ─── My files ─── */
+.parcel-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 12px 8px 12px 16px;
+  border-radius: 12px;
+  transition: background-color .15s ease;
+}
+@media (hover: hover) {
+  .parcel-row:hover { background: color-mix(in srgb, var(--on-surface) 6%, transparent); }
+}
+.parcel-row-main { flex: 1; min-width: 0; }
+.parcel-code-cell {
+  display: flex; align-items: center; gap: 8px;
+  color: var(--on-surface);
+  font: 700 16px/24px var(--font);
+  font-variant-numeric: tabular-nums;
+}
+.parcel-lock { display: inline-flex; color: var(--on-surface-variant); }
+.parcel-lock .icon { width: 14px; height: 14px; }
+.parcel-meta { margin-top: 2px; font-size: 12px; line-height: var(--lh-s); color: var(--on-surface-variant); }
+
+/* ─── Drop overlay: a primary container scrim, the icon and the words ─── */
+#drop-overlay {
+  position: fixed; inset: 0; z-index: 9000;
+  display: none; align-items: center; justify-content: center;
+  padding: 16px;
+  background: color-mix(in srgb, var(--primary-container) 94%, transparent);
+}
+#drop-overlay.is-active { display: flex; animation: fade-in .15s ease; }
+.drop-overlay-inner {
+  max-width: 100%;
+  padding: 64px 96px;
+  color: var(--on-primary-container);
+  text-align: center;
+}
+.drop-overlay-inner svg { margin: 0 auto 16px; color: var(--accent); }
+.drop-overlay-inner p { font: 500 24px/32px var(--font); }
+
+/* ─── Dialogs ─── */
+.modal {
+  position: fixed; inset: 0; z-index: 8000;
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+  animation: fade-in .2s ease;
+  transition: opacity .15s ease, display .15s allow-discrete;
+}
+/* Closing, it fades out where it is (the page behind is live again at
+   once, so it takes no clicks meanwhile). */
+.modal[hidden] { opacity: 0; pointer-events: none; }
+.modal-backdrop { position: absolute; inset: 0; background: var(--scrim); }
+.modal-card {
+  --on-bg: var(--surface-container-high);
+  position: relative;
+  width: 100%; max-width: 420px;
+  max-height: calc(100vh - 32px);
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  padding: 32px 24px 24px;
+  background: var(--surface-container-high);
+  border-radius: 28px;
+  box-shadow: var(--elev-3);
+}
+.modal-card .card-sub { margin-bottom: 20px; }
+.modal-card .field { margin-bottom: 12px; }
+.text-modal-card { max-width: 560px; }
+body.has-modal { overflow: hidden; }
+
+.text-area {
+  display: block;
+  width: 100%; min-height: 220px;
+  margin: 16px 0 20px; padding: 16px;
+  resize: none;
+  background-color: var(--field-c);
+  border: 0; border-radius: 12px;
+  color: var(--on-surface);
+  caret-color: var(--accent);
+  font: 400 16px/24px var(--font);
+  outline: none;
+  transition: background-color .15s ease;
+}
+.text-area::placeholder { color: var(--on-surface-variant); opacity: 1; }
+@media (hover: hover) {
+  .text-area:hover { --field-c: color-mix(in srgb, var(--on-surface) 6%, var(--field-base)); }
+}
+.text-area:focus { --field-c: color-mix(in srgb, var(--accent) 14%, var(--field-base)); }
+
+.confirm-actions { display: flex; gap: 12px; margin-top: 20px; }
+.confirm-actions .cta { flex: 1; }
+
+/* ─── Footer: small print on the grey well band ─── */
+.site-footer {
+  padding: 14px var(--gutter);
+  padding-bottom: max(14px, env(safe-area-inset-bottom, 0px));
+  background: var(--well);
+  text-align: center;
+}
+.foot-line {
+  display: inline-flex; flex-wrap: wrap; justify-content: center; gap: 0 14px;
+  font-size: 12px; line-height: var(--lh-s);
+  color: var(--on-surface);
+  opacity: .6;
+}
+
+/* ─── Snackbar ─── */
+#toast {
+  position: fixed; left: 50%; bottom: 80px; z-index: 9999;
+  max-width: calc(100vw - 32px);
+  min-height: 48px; padding: 14px 16px;
+  transform: translate(-50%, 4px);
+  background: var(--inverse-surface);
+  color: var(--inverse-on-surface);
+  border-radius: 8px;
+  box-shadow: var(--elev-3);
+  font-size: 14px; line-height: 20px;
+  text-align: center;
+  opacity: 0; pointer-events: none;
+  transition: opacity .2s ease, transform .2s ease;
+}
+#toast.is-visible { opacity: 1; transform: translate(-50%, 0); }
+
+/* ─── Admin ─── */
+.admin-stage { display: none; width: 100%; max-width: 1100px; }
+.admin-stage.is-active { display: block; animation: fade-in .2s ease; }
+#admin-dashboard { align-self: flex-start; }
+.admin-card { display: block; max-width: 420px; margin: 0 auto; }
+code {
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--surface-container-highest);
+  color: var(--on-surface);
+  font: 400 12px/1.4 var(--font);
+  white-space: nowrap;
+  -webkit-user-select: all; user-select: all;
+}
+
+/* Tabs: pills; the open one takes the secondary container. */
+.admin-tabs {
+  display: flex; flex-wrap: wrap; gap: 8px;
+  margin-bottom: 28px;
+}
+.ghost.admin-tab { padding: 0 16px; }
+.ghost.admin-tab.is-active {
+  color: var(--on-secondary-container); background: var(--secondary-container); font-weight: 600;
+}
+.admin-panel { display: none; padding-bottom: 24px; }
+.admin-panel.is-active { display: block; animation: fade-in .2s ease; }
+.admin-panel h2 { margin: 0 0 8px; font: 500 24px/32px var(--font); color: var(--on-surface); }
+.admin-panel h2 + .card-sub, .admin-panel > .card-sub { text-align: left; }
+
+/* The form panels stay narrow; the tables take the full width. */
+.admin-panel[data-panel="config"], .admin-panel[data-panel="password"] { max-width: 520px; }
+.admin-panel[data-panel="config"] .panel-body > .field,
+.admin-panel[data-panel="config"] .panel-body > .field-group,
+.admin-panel[data-panel="password"] > .field { margin-bottom: 12px; }
+.admin-panel .card-cta { margin-top: 4px; }
+.admin-card .field { margin-bottom: 12px; }
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px; margin-top: 16px;
+}
+.stat-card, .admin-table-wrap {
+  --on-bg: var(--surface-container-low);
+  border-radius: 16px;
+  background: var(--surface-container-low);
+}
+.stat-card { padding: 16px 20px; }
+.stat-card-wide { grid-column: 1 / -1; }
+.stat-label { font-size: 12px; line-height: 16px; color: var(--on-surface-variant); }
+.stat-value { margin-top: 8px; font: 700 22px/28px var(--font); color: var(--on-surface); }
+.stat-card .progress-bar { margin-top: 12px; }
+
+.admin-table-wrap { margin-top: 16px; padding: 4px 8px; overflow: auto; }
+.admin-table { width: 100%; border-collapse: separate; border-spacing: 0 2px; }
+.admin-table th, .admin-table td {
+  padding: 10px 12px;
+  text-align: left; vertical-align: middle;
+  font-size: 13px; line-height: 20px;
+  white-space: nowrap;
+  transition: background-color .15s ease;
+}
+.admin-table th { padding-top: 12px; padding-bottom: 8px; font-size: 12px; line-height: 16px; font-weight: 500; color: var(--on-surface-variant); }
+.admin-table td:first-child { border-radius: 12px 0 0 12px; }
+.admin-table td:last-child { border-radius: 0 12px 12px 0; }
+@media (hover: hover) {
+  .admin-table tbody tr:not(.loader-row):hover td { background: color-mix(in srgb, var(--on-surface) 6%, transparent); }
+}
+.code-cell { display: inline-flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
+.cell-lock { display: inline-flex; color: var(--on-surface-variant); }
+.cell-lock .icon { width: 14px; height: 14px; }
+.expired { color: var(--error); }
+.never-expires { color: var(--ok); }
+.btn-line.row-action { margin-right: 6px; }
+.perm-badge {
+  display: inline-block; margin-left: 6px; padding: 0 8px;
+  border-radius: 999px;
+  font-size: 11px; line-height: 18px;
+  color: var(--on-secondary-container); background: var(--secondary-container);
+  vertical-align: middle;
+}
+
+/* System storage: one tonal block with the mode switch, then the slider
+   or the size, then the disk bar with its legend. */
+.storage-ctl {
+  --on-bg: color-mix(in srgb, var(--field-ink) 7%, var(--surface));
+  margin-bottom: 12px; padding: 4px 16px 16px;
+  border-radius: 12px;
+  background: var(--on-bg);
+}
+.storage-head {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  min-height: 56px;
+}
+.storage-label { color: var(--on-surface); font-size: 16px; line-height: 24px; }
+/* Segmented control: a tonal track, the chosen segment in the
+   secondary container. */
+.seg {
+  display: inline-flex; gap: 2px;
+  margin-left: auto; padding: 4px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--field-ink) 7%, transparent);
+}
+.seg-btn {
+  height: 32px; padding: 0 14px;
+  border-radius: 999px;
+  color: var(--on-surface-variant);
+  font: 500 13px/20px var(--font);
+  white-space: nowrap;
+  transition: background-color .15s ease, color .15s ease;
+}
+.seg-btn[aria-checked="true"] {
+  background: var(--secondary-container); color: var(--on-secondary-container); font-weight: 600;
+}
+.storage-line { display: flex; align-items: center; gap: 16px; min-height: 48px; }
+.storage-value { flex-shrink: 0; min-width: 140px; text-align: right; font-size: 14px; line-height: 20px; color: var(--on-surface); }
+.storage-size { flex: 1; }
+
+/* Slider, M3: the active track in primary, the rest a pale tint of it
+   (the secondary container, deep enough to read on a tonal block), a
+   round handle with a state layer around it. */
+.range {
+  --fill: 50%;
+  flex: 1; min-width: 0;
+  height: 40px; margin: 0;
+  background: transparent;
+  -webkit-appearance: none; appearance: none;
+  cursor: pointer;
+}
+.range::-webkit-slider-runnable-track {
+  height: 4px; border-radius: 999px;
+  background-color: var(--slider-track);
+  background-image: var(--fill-img);
+  background-repeat: no-repeat;
+  background-size: var(--fill) 100%;
+}
+.range::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 20px; height: 20px; margin-top: -8px;
+  border: 0; border-radius: 50%;
+  background: var(--accent);
+  transition: box-shadow .15s ease;
+}
+.range::-moz-range-track { height: 4px; border-radius: 999px; background: var(--slider-track); }
+.range::-moz-range-progress { height: 4px; border-radius: 999px; background: var(--accent); }
+.range::-moz-range-thumb {
+  width: 20px; height: 20px;
+  border: 0; border-radius: 50%;
+  background: var(--accent);
+  transition: box-shadow .15s ease;
+}
+@media (hover: hover) {
+  .range:hover::-webkit-slider-thumb { box-shadow: 0 0 0 10px color-mix(in srgb, var(--accent) 8%, transparent); }
+  .range:hover::-moz-range-thumb { box-shadow: 0 0 0 10px color-mix(in srgb, var(--accent) 8%, transparent); }
+}
+.range:focus-visible::-webkit-slider-thumb,
+.range:active::-webkit-slider-thumb { box-shadow: 0 0 0 10px color-mix(in srgb, var(--accent) 10%, transparent); }
+.range:focus-visible::-moz-range-thumb,
+.range:active::-moz-range-thumb { box-shadow: 0 0 0 10px color-mix(in srgb, var(--accent) 10%, transparent); }
+
+.disk-bar {
+  position: relative;
+  display: flex;
+  height: 8px; margin: 8px 0 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--field-ink) 10%, transparent);
+  overflow: hidden;
+}
+.disk-seg { height: 100%; }
+.disk-od { background: var(--accent); }
+.disk-other { background: var(--disk-other); }
+.disk-mark {
+  position: absolute; top: 0; bottom: 0;
+  width: 3px; margin-left: -1px;
+  border-radius: 2px;
+  background: var(--on-surface);
+}
+.disk-legend {
+  display: flex; flex-wrap: wrap; gap: 2px 16px;
+  font-size: 12px; line-height: var(--lh-s);
+  color: var(--on-surface-variant);
+  font-variant-numeric: tabular-nums;
+}
+.lg { display: inline-flex; align-items: center; gap: 6px; }
+.lg i { width: 8px; height: 8px; border-radius: 50%; }
+.lg-od i { background: var(--accent); }
+.lg-other i { background: var(--disk-other); }
+.lg-free i { background: color-mix(in srgb, var(--field-ink) 16%, transparent); }
+.lg-quota i { width: 3px; height: 10px; border-radius: 2px; background: var(--on-surface); }
+.cfg-warn {
+  margin-top: 12px; padding: 10px 12px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--warn) 12%, transparent);
+  color: var(--warn);
+  font-size: 12px; line-height: var(--lh-s);
+}
+
+/* Switch rows: the label and an M3 switch on the field's tone. */
+.switch-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  min-height: 56px; margin-bottom: 12px; padding: 0 12px 0 16px;
+  border-radius: 12px;
+  background: var(--field-c);
+}
+.switch-label { color: var(--on-surface); font-size: 16px; line-height: 24px; }
+/* Switch, M3 without the outline: off, a deeper tonal track and a small
+   variant thumb; on, the primary track and a larger white thumb. The
+   state layer is a soft disc around the thumb. */
+.switch {
+  position: relative; flex-shrink: 0;
+  width: 52px; height: 32px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--field-ink) 16%, transparent);
+  color: var(--on-surface);
+  transition: background-color .15s ease;
+}
+.switch .knob {
+  position: absolute; top: 50%; left: 8px;
+  width: 16px; height: 16px; margin-top: -8px;
+  border-radius: 50%;
+  background: var(--on-surface-variant);
+  transition: transform .15s ease, width .15s ease, height .15s ease, margin .15s ease,
+    left .15s ease, background-color .15s ease, box-shadow .15s ease;
+}
+.switch[aria-checked="true"] { background: var(--primary); color: var(--primary); }
+.switch[aria-checked="true"] .knob {
+  left: 4px; width: 24px; height: 24px; margin-top: -12px;
+  transform: translateX(20px);
+  background: var(--on-primary);
+}
+@media (hover: hover) {
+  .switch:hover .knob { box-shadow: 0 0 0 12px color-mix(in srgb, currentColor 8%, transparent); }
+  .switch[aria-checked="true"]:hover .knob { box-shadow: 0 0 0 8px color-mix(in srgb, currentColor 8%, transparent); }
+}
+.switch:focus-visible .knob,
+.switch:active .knob { box-shadow: 0 0 0 12px color-mix(in srgb, currentColor 10%, transparent); }
+.switch[aria-checked="true"]:focus-visible .knob,
+.switch[aria-checked="true"]:active .knob { box-shadow: 0 0 0 8px color-mix(in srgb, currentColor 10%, transparent); }
+
+/* ─── Phones ─── */
+@media (max-width: 600px) {
+  main { padding-top: 24px; padding-bottom: 32px; }
+  .hero-mark { font-size: 52px; }
+  .card { padding: 28px 20px 24px; }
+  .card-close { top: 8px; right: 8px; }
+  .modal-card { padding: 28px 20px 20px; }
+  .pickup-code { font-size: 32px; line-height: 40px; }
+  .progress-pct { font-size: 48px; }
+  .drop-overlay-inner { padding: 48px 32px; }
+  .storage-value { min-width: 0; }
+}
+
+/* ─── The page's own scrollbar (homepage scrollbar.js) ─── */
+html.has-scrollbar { scrollbar-width: none; }
+html.has-scrollbar::-webkit-scrollbar { display: none; }
+.scrollbar { display: none; }
+html.has-scrollbar .scrollbar {
+  display: block;
+  position: fixed; top: var(--nav-h); right: 0; bottom: 0; z-index: 90;
+  width: 14px;
+  opacity: 0;
+  transition: opacity .4s ease;
+}
+html.has-scrollbar .scrollbar.is-shown { opacity: 1; transition-duration: .15s; }
+html.has-scrollbar .scrollbar.is-idle { visibility: hidden; pointer-events: none; }
+.scrollbar-thumb {
+  position: absolute; top: 0; right: 3px;
+  width: 6px; border-radius: 999px;
+  background: var(--scroll-thumb);
+  transition: width .15s ease, background-color .15s ease;
+}
+.scrollbar:hover .scrollbar-thumb { width: 8px; background: var(--scroll-thumb-hover); }
+.scrollbar.is-dragging .scrollbar-thumb { width: 8px; background: var(--scroll-thumb-active); }
+@media print { .scrollbar { display: none !important; } }
+
+/* ─── Reduced motion: things simply appear; the floating label keeps
+   its short 150ms move so the field still reads as one control (the
+   loading indicator has its own block at the end) ─── */
+@media (prefers-reduced-motion: reduce) {
+  .ripple { display: none; }
+  .stage.is-active, .stage .card[data-substate].is-active, .modal, #drop-overlay.is-active,
+  .admin-stage.is-active, .admin-panel.is-active { animation: none; }
+  .dropdown, .cta-hint, #navbar, .ghost, .cta, .file-row, .parcel-row, .field, .code-digit,
+  .text-area, .progress-bar-fill, #toast, .quick-set, .seg-btn, .switch, .switch .knob,
+  .admin-table td, .theme-auto, .ripple-surface::before, .modal,
+  #navbar .ghost, .cta-hint .ghost, .dd-item, .lang-btn .chevron,
+  html.has-scrollbar .scrollbar, .scrollbar-thumb { transition: none; }
+}
+
+/* The admin lists come a page at a time. */
+.load-more { text-align: center; padding-top: 12px; padding-bottom: 4px; }
+
+/* ─── Loading (common.js: OD.loading, OD.busy) ───
+   The M3 indeterminate circular indicator: the whole turns while the
+   arc grows and shrinks. In an area, 28px in primary over 加载中 in body
+   medium; inside a busy button, 16px in the button's own ink, in place
+   of its icon or before its label. */
+.spinner {
+  width: 28px; height: 28px;
+  color: var(--accent);
+  animation: spinner-turn 1.4s linear infinite;
+}
+.spinner circle {
+  stroke-dasharray: 1 200; stroke-dashoffset: 0;
+  animation: spinner-arc 1.4s ease-in-out infinite;
+}
+.spinner-sm { width: 16px; height: 16px; color: inherit; }
+@keyframes spinner-turn { to { transform: rotate(360deg); } }
+@keyframes spinner-arc {
+  0% { stroke-dasharray: 1 200; stroke-dashoffset: 0; }
+  50% { stroke-dasharray: 90 200; stroke-dashoffset: -15; }
+  100% { stroke-dasharray: 90 200; stroke-dashoffset: -124; }
+}
+/* The area loader keeps its place from the start and shows only once
+   the wait is due; in a grid it spans every column. */
+.loader {
+  grid-column: 1 / -1;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+  padding: 32px 16px;
+  color: var(--on-surface-variant);
+  font: 400 14px/var(--lh-m) var(--font);
+  text-align: center;
+  opacity: 0;
+}
+.loader.is-shown { opacity: 1; animation: fade-in .15s ease; }
+.admin-table .loader-row td { padding: 0; }
+.is-fading-in { animation: fade-in .18s ease; }
+/* A busy button: no change of look, a progress cursor; a label that
+   has to make room for the indicator gets the padding. */
+.is-busy { cursor: progress; }
+.busy-hide { display: none !important; }
+/* Ahead of a label: a zero width space before the indicator gives the
+   mark a text baseline, which the button keeps as its own. */
+.busy-mark { display: inline-flex; align-items: center; }
+.busy-mark::before { content: "\200b"; }
+.is-busy.is-tight { padding-left: 2px; padding-right: 2px; gap: 4px; }
+/* The upload card says 处理中 on its bytes line while the server makes
+   the parcel or makes it ready. */
+.progress-bytes.is-processing { display: inline-flex; align-items: center; gap: 8px; }
+.progress-bytes .spinner-sm { color: var(--accent); }
+/* The admin panel link comes once the account is known. */
+#admin-link:not([hidden]) { animation: fade-in .2s ease; }
+/* Reduced motion (after the rules above, so it wins): no fades; the
+   indicator still turns, slowly, with its arc held still. */
+@media (prefers-reduced-motion: reduce) {
+  .loader.is-shown, .is-fading-in, #admin-link:not([hidden]) { animation: none; }
+  .spinner { animation-duration: 3s; }
+  .spinner circle { animation: none; stroke-dasharray: 80 200; }
+}

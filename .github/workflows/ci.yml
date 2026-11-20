@@ -1,0 +1,46 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rust:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --check
+      - run: cargo clippy --all-targets --locked -- -D warnings
+      - run: cargo test --locked
+
+  shell:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: bash -n
+        run: bash -n install.sh
+      - name: shellcheck
+        run: |
+          shellcheck install.sh
+          # the host command that install.sh writes to /usr/local/bin/opendrop
+          cli="$RUNNER_TEMP/opendrop"
+          { printf '#!/usr/bin/env bash\nDIR=/opt/opendrop\nGIT=x\n'
+            sed -n "/^    cat <<'CLI_EOF'\$/,/^CLI_EOF\$/p" install.sh | sed '1d;$d'; } > "$cli"
+          bash -n "$cli"
+          shellcheck -s bash "$cli"
+      - name: compose config
+        run: |
+          docker compose config -q
+          OPENDROP_BIND= OPENDROP_IPV6=true docker compose config -q
+          DOMAIN=drop.example.com COMPOSE_PROFILES=https OPENDROP_BIND=127.0.0.1 OPENDROP_PORT=8081 docker compose config -q

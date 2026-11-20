@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>open.drop</title>
+
+  <meta name="description" content="open.drop，自托管的临时文件传输。拖拽即可发送，凭取件码即可接收。">
+  <meta name="theme-color" content="#FFFFFF">
+  <meta name="color-scheme" content="light dark">
+  <meta name="referrer" content="no-referrer">
+
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="open.drop">
+  <meta property="og:title" content="open.drop">
+  <meta property="og:description" content="拖拽即发，输码即取。">
+  <meta property="og:locale" content="zh_CN">
+  <meta property="og:locale:alternate" content="en_US">
+
+  <link rel="icon" href="/assets/icon.svg" type="image/svg+xml">
+  <!-- The theme first, so the page paints in it -->
+  <script src="/assets/theme.js"></script>
+  <link rel="stylesheet" href="/assets/od.css">
+  <script defer src="/assets/common.js"></script>
+  <script defer src="/assets/app.js"></script>
+</head>
+<body>
+
+  <!-- Navbar, as on the homepage: the wordmark left; right, theme,
+       GitHub, the admin panel (admins), my files, language, then sign
+       in, sign out or the account menu -->
+  <header id="navbar" class="site-header">
+    <div class="nav">
+      <a id="brand" class="ghost brand-btn ripple-surface" href="/" aria-label="open.drop">
+        <span class="wordmark" data-site-name><span class="wm-name">open</span><span class="wm-dot">.</span><span class="wm-page">drop</span></span>
+      </a>
+
+      <div class="nav-right">
+        <button id="theme-btn" class="ghost icon-btn ripple-surface" type="button" aria-label="外观">
+          <!-- Lucide `sun` and `moon` (ISC) -->
+          <svg class="icon theme-sun" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+          <svg class="icon theme-moon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+          <span class="theme-auto" aria-hidden="true">A</span>
+        </button>
+        <a id="github-link" class="ghost icon-btn ripple-surface" href="https://github.com/MrTangLuyao/opendrop" target="_blank" rel="noopener noreferrer" data-i18n-label="github" aria-label="GitHub 仓库" title="GitHub">
+          <!-- Lucide `github` (ISC) -->
+          <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg>
+        </a>
+        <a id="admin-link" class="ghost nav-link ripple-surface" href="/admin" hidden>
+          <!-- Lucide `layout-dashboard` (ISC) -->
+          <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+          <span data-i18n="admin-console">管理员面板</span>
+        </a>
+        <!-- My files: always shown; signed out it asks to sign in first -->
+        <button id="my-files-link" class="ghost nav-link ripple-surface" type="button">
+          <!-- Lucide `folder` (ISC) -->
+          <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
+          <span data-i18n="menu-my-files">我的文件</span>
+        </button>
+        <!-- The language picker, laid out as on developer.android.com: the
+             mark, the language in use, a chevron; it opens a list of the
+             languages, each named in itself. -->
+        <div class="lang">
+          <button id="lang-btn" class="ghost lang-btn ripple-surface" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="lang-menu">
+            <!-- 文 and A in HarmonyOS Sans, set like the usual language icon. -->
+            <span class="lang-mark" aria-hidden="true"><span class="lm-zh">文</span><span class="lm-en">A</span></span>
+            <span id="lang-label">简体中文</span>
+            <!-- Lucide `chevron-down` (ISC) -->
+            <svg class="icon chevron" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+          </button>
+          <div id="lang-menu" class="dropdown lang-menu" role="menu">
+            <button type="button" class="dd-item ripple-surface" role="menuitemradio" aria-checked="false" data-lang="en" lang="en">English</button>
+            <button type="button" class="dd-item ripple-surface" role="menuitemradio" aria-checked="true" data-lang="zh" lang="zh-CN">简体中文</button>
+          </div>
+        </div>
+        <!-- Signed out: sign in, in place of the account menu -->
+        <button id="login-btn" class="ghost nav-link ripple-surface" type="button" data-action="login">
+          <!-- Lucide `log-in` (ISC) -->
+          <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m10 17 5-5-5-5"/><path d="M15 12H3"/><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/></svg>
+          <span data-i18n="nav-login">登录</span>
+        </button>
+        <!-- Signed in to an account that never expires (admin, long-term):
+             sign out, in place of a menu that would hold only that -->
+        <button id="logout-btn" class="ghost nav-link ripple-surface" type="button" data-action="logout" hidden>
+          <!-- Lucide `log-out` (ISC) -->
+          <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/></svg>
+          <span data-i18n="menu-logout">退出登录</span>
+        </button>
+        <!-- Signed in to an account that expires: the account menu -->
+        <div class="menu-wrap" id="menu-wrap" hidden>
+          <button id="menu-btn" class="ghost icon-btn ripple-surface" type="button" data-i18n-label="menu" aria-label="菜单" aria-haspopup="menu" aria-expanded="false" aria-controls="nav-menu">
+            <!-- Lucide `menu` (ISC) -->
+            <svg class="icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h16"/><path d="M4 18h16"/><path d="M4 6h16"/></svg>
+          </button>
+          <div id="nav-menu" class="dropdown nav-menu" role="menu">
+            <!-- Phones keep GitHub here, as the homepage does -->
+            <a class="dd-item dd-github ripple-surface" href="https://github.com/MrTangLuyao/opendrop" target="_blank" rel="noopener noreferrer" role="menuitem" lang="en">GitHub</a>
+            <button class="dd-item ripple-surface" data-action="renew" type="button" role="menuitem" hidden><span data-i18n="menu-renew">续期账户</span></button>
+            <button class="dd-item ripple-surface" data-action="logout" type="button" role="menuitem"><span data-i18n="menu-logout">退出登录</span></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Full-viewport drop overlay -->
+  <div id="drop-overlay" aria-hidden="true">
+    <div class="drop-overlay-inner">
+      <!-- Lucide download (ISC) -->
+      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>
+      <p data-i18n="drop-overlay">松手以发送</p>
+    </div>
+  </div>
+
+  <main>
+
+    <!-- Stage 1: landing -->
+    <section id="stage-landing" class="stage is-active">
+      <div class="brand-hero">
+        <div class="logo">
+          <svg viewBox="0 0 96 96" aria-hidden="true">
+            <rect x="0" y="0" width="96" height="96" rx="22" fill="#2C5A8C"/>
+            <path d="M28 58 Q22 58 22 50 Q22 42 30 42 Q32 30 46 30 Q60 30 62 42 Q72 42 72 50 Q72 58 66 58 Z" fill="#FFFFFF"/>
+            <path d="M47 50 L47 68 M40 62 L47 69 L54 62" stroke="#D3D8E0" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          </svg>
+        </div>
+        <h1 class="hero-mark" lang="en" data-site-name><span class="w-light">open</span><span class="w-dot">.</span><span class="w-accent">drop</span></h1>
+        <p class="tagline" data-i18n="tagline">把文件拖入这里即可发送</p>
+      </div>
+
+      <div class="cta-stack">
+        <div class="cta-with-hint">
+          <button id="btn-send" class="cta cta-primary ripple-surface" type="button">
+            <span data-i18n="cta-send">发送</span>
+          </button>
+          <div class="cta-hint" id="send-hint">
+            <ul>
+              <li data-i18n="hint-drag">可直接拖拽文件到页面上以发送</li>
+              <li><span data-i18n="hint-paste-a">可直接按 </span><kbd>Ctrl</kbd>+<kbd>V</kbd><span data-i18n="hint-paste-b"> 以发送剪贴板中的内容</span></li>
+            </ul>
+            <div class="hint-row">
+              <button class="hint-chip ghost ripple-surface" data-pick="files" type="button">
+                <!-- Lucide file (ISC) -->
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/></svg>
+                <span data-i18n="chip-files">文件</span>
+              </button>
+              <button class="hint-chip ghost ripple-surface" data-pick="text" type="button">
+                <!-- Lucide mail (ISC) -->
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg>
+                <span data-i18n="chip-text">文本</span>
+              </button>
+              <button class="hint-chip ghost ripple-surface" data-pick="folder" type="button">
+                <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg>
+                <span data-i18n="chip-folder">文件夹</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        <button id="btn-receive" class="cta cta-tonal ripple-surface" type="button">
+          <span data-i18n="cta-receive">接收</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Stage 2: send -->
+    <section id="stage-send" class="stage">
+      <div class="card" data-substate="pick">
+        <button class="card-close ghost icon-btn ripple-surface" type="button" data-action="cancel" data-i18n-label="close" aria-label="Close">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+        <h2 data-i18n="send-title">您选择了这些文件</h2>
+        <p class="card-sub" id="send-card-sub">未登录</p>
+
+        <div class="file-list" id="send-file-list"></div>
+
+        <!-- Filled fields: a leading icon, the input, the label that floats
+             up inside the field on focus or once it holds a value -->
+        <div class="config-grid">
+          <label class="field">
+            <!-- Lucide lock (ISC) -->
+            <svg class="icon field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            <input type="password" id="cfg-password" data-i18n-ph="cfg-password-ph" placeholder="可留空" autocomplete="new-password" maxlength="128" spellcheck="false">
+            <span class="field-label" data-i18n="cfg-password">密码</span>
+          </label>
+          <label class="field">
+            <svg class="icon field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>
+            <input type="number" id="cfg-downloads" value="2" min="1" max="999" step="1" inputmode="numeric" placeholder=" ">
+            <span class="field-label" data-i18n="cfg-downloads">可下载次数</span>
+          </label>
+          <div class="field-group">
+            <label class="field">
+              <!-- Lucide clock (ISC) -->
+              <svg class="icon field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+              <input type="number" id="cfg-expiry" value="24" min="1" max="168" step="1" inputmode="numeric" placeholder=" " aria-describedby="cfg-expiry-support">
+              <span class="field-label" id="cfg-expiry-label">有效期（小时）</span>
+            </label>
+            <p class="field-support" id="cfg-expiry-support" hidden></p>
+          </div>
+        </div>
+
+        <p class="card-error" id="upload-error" role="alert" hidden></p>
+        <button id="btn-upload" class="cta cta-primary card-cta ripple-surface" type="button">
+          <span data-i18n="btn-upload">上传</span>
+        </button>
+      </div>
+
+      <div class="card" data-substate="uploading">
+        <button class="card-close ghost icon-btn ripple-surface" type="button" data-action="cancel-upload" data-i18n-label="cancel" aria-label="Cancel">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+        <h2 data-i18n="uploading-title">正在上传</h2>
+        <p class="card-sub sel" id="upload-filename"></p>
+        <div class="progress-display">
+          <div class="progress-pct"><span id="upload-pct">0</span><span class="progress-pct-unit">%</span></div>
+          <div class="progress-bytes" id="upload-bytes">0 B / 0 B</div>
+          <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="upload-bar-wrap"><div class="progress-bar-fill" id="upload-bar"></div></div>
+        </div>
+      </div>
+
+      <div class="card" data-substate="success">
+        <button class="card-close ghost icon-btn ripple-surface" type="button" data-action="reset" data-i18n-label="close" aria-label="Close">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+        <h2 data-i18n="success-title">文件已成功发送</h2>
+        <p class="card-sub" data-i18n="your-code">您的取件码</p>
+        <div class="pickup-code sel" id="pickup-code"></div>
+        <p class="success-hint" data-i18n="enter-code-hint">接收文件时，请输入如上取件码</p>
+
+        <div class="success-actions">
+          <button class="link-action ghost ripple-surface" id="btn-copy-link" type="button">
+            <!-- Lucide link (ISC) -->
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            <span data-i18n="copy-link">复制下载链接</span>
+          </button>
+          <button class="link-action ghost ripple-surface" id="btn-show-qr" type="button" aria-expanded="false" aria-controls="qr-panel">
+            <!-- Lucide qr-code (ISC) -->
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="5" height="5" x="3" y="3" rx="1"/><rect width="5" height="5" x="16" y="3" rx="1"/><rect width="5" height="5" x="3" y="16" rx="1"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/><path d="M21 21v.01"/><path d="M12 7v3a2 2 0 0 1-2 2H7"/><path d="M3 12h.01"/><path d="M12 3h.01"/><path d="M12 16v.01"/><path d="M16 12h1"/><path d="M21 12v.01"/><path d="M12 21v-1"/></svg>
+            <span data-i18n="show-qr">显示二维码</span>
+          </button>
+        </div>
+
+        <div class="qr-panel" id="qr-panel" hidden>
+          <img id="qr-img" width="180" height="180" alt="">
+        </div>
+
+        <p class="success-share sel" id="success-share-url"></p>
+      </div>
+    </section>
+
+    <!-- Stage 3: receive -->
+    <section id="stage-receive" class="stage">
+      <div class="card" data-substate="code">
+        <button class="card-close ghost icon-btn ripple-surface" type="button" data-action="cancel" data-i18n-label="close" aria-label="Close">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+        <h2 data-i18n="receive-title">请输入取件码</h2>
+        <p class="card-sub" data-i18n="receive-sub">六位数字</p>
+
+        <div class="code-input-row" id="code-input-row" role="group" data-i18n-label="receive-title">
+          <input type="text" inputmode="numeric" autocomplete="off" maxlength="1" class="code-digit" data-i="0" aria-label="1">
+          <input type="text" inputmode="numeric" autocomplete="off" maxlength="1" class="code-digit" data-i="1" aria-label="2">
+          <input type="text" inputmode="numeric" autocomplete="off" maxlength="1" class="code-digit" data-i="2" aria-label="3">
+          <input type="text" inputmode="numeric" autocomplete="off" maxlength="1" class="code-digit" data-i="3" aria-label="4">
+          <input type="text" inputmode="numeric" autocomplete="off" maxlength="1" class="code-digit" data-i="4" aria-label="5">
+          <input type="text" inputmode="numeric" autocomplete="off" maxlength="1" class="code-digit" data-i="5" aria-label="6">
+        </div>
+
+        <label class="field code-password-row" id="code-password-row" hidden>
+          <svg class="icon field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          <input type="password" id="receive-password" autocomplete="off" maxlength="128" spellcheck="false" placeholder=" ">
+          <span class="field-label" data-i18n="cfg-password">密码</span>
+        </label>
+
+        <p class="code-error" id="code-error" role="alert" hidden></p>
+        <button id="btn-fetch" class="cta cta-primary card-cta ripple-surface" type="button">
+          <span data-i18n="btn-fetch">接收</span>
+        </button>
+      </div>
+
+      <div class="card" data-substate="list">
+        <button class="card-close ghost icon-btn ripple-surface" type="button" data-action="reset" data-i18n-label="close" aria-label="Close">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+        <h2 id="receive-list-title" data-i18n="receive-list-title">文件已就绪</h2>
+        <p class="card-sub" id="receive-meta"></p>
+        <div class="file-list" id="receive-file-list"></div>
+        <button id="btn-download-all" class="cta cta-primary card-cta ripple-surface" type="button">
+          <span id="btn-download-all-label" data-i18n="btn-download-all">下载全部</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Stage 4: my files -->
+    <section id="stage-my-files" class="stage">
+      <div class="card card-wide" data-substate="list">
+        <button class="card-close ghost icon-btn ripple-surface" type="button" data-action="reset" data-i18n-label="close" aria-label="Close">
+          <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+        </button>
+        <h2 data-i18n="my-files-title">我的文件</h2>
+        <p class="card-sub" id="my-files-meta"></p>
+        <div class="parcel-list" id="my-files-list"></div>
+      </div>
+    </section>
+  </main>
+
+  <input type="file" id="file-input" multiple hidden>
+  <input type="file" id="folder-input" webkitdirectory multiple hidden>
+
+  <!-- Send-text modal -->
+  <div id="send-text-modal" class="modal" hidden>
+    <div class="modal-backdrop" data-action="send-text-close"></div>
+    <div class="modal-card text-modal-card" role="dialog" aria-modal="true" aria-labelledby="send-text-title">
+      <button class="card-close ghost icon-btn ripple-surface" type="button" data-action="send-text-close" data-i18n-label="close" aria-label="Close">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+      <h2 id="send-text-title" data-i18n="send-text-title">发送文本</h2>
+      <textarea id="send-text-area" class="text-area" data-i18n-ph="send-text-placeholder" placeholder="请输入纯文本" rows="10" spellcheck="false"></textarea>
+      <button id="btn-send-text" class="cta cta-primary card-cta ripple-surface" type="button">
+        <span data-i18n="cta-send">发送</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Receive-text modal -->
+  <div id="receive-text-modal" class="modal" hidden>
+    <div class="modal-backdrop" data-action="receive-text-close"></div>
+    <div class="modal-card text-modal-card" role="dialog" aria-modal="true" aria-labelledby="receive-text-title">
+      <button class="card-close ghost icon-btn ripple-surface" type="button" data-action="receive-text-close" data-i18n-label="close" aria-label="Close">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+      <h2 id="receive-text-title" data-i18n="receive-text-title">接收到文本</h2>
+      <textarea id="receive-text-area" class="text-area sel" readonly spellcheck="false"></textarea>
+      <button id="btn-copy-text" class="cta cta-primary card-cta ripple-surface" type="button">
+        <span data-i18n="btn-copy-text">复制</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Login modal -->
+  <div id="login-modal" class="modal" hidden>
+    <div class="modal-backdrop" data-action="login-close"></div>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="login-title">
+      <button class="card-close ghost icon-btn ripple-surface" type="button" data-action="login-close" data-i18n-label="close" aria-label="Close">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+      <h2 id="login-title">登录或注册</h2>
+      <p class="card-sub" id="login-sub">用户名和密码可任意填写，账户有效期 7 天，可随时续期</p>
+
+      <label class="field">
+        <!-- Lucide user (ISC) -->
+        <svg class="icon field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        <input type="text" id="login-username" autocomplete="username" autocapitalize="off" spellcheck="false" maxlength="32" placeholder=" ">
+        <span class="field-label" data-i18n="cfg-username">用户名</span>
+      </label>
+      <label class="field">
+        <svg class="icon field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <input type="password" id="login-password" autocomplete="current-password" maxlength="128" placeholder=" ">
+        <span class="field-label" data-i18n="cfg-password">密码</span>
+      </label>
+
+      <p class="card-error" id="login-error" role="alert" hidden></p>
+      <button id="btn-login-submit" class="cta cta-primary card-cta ripple-surface" type="button">
+        <span id="btn-login-label">登录 / 注册</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Edit-parcel modal (pencil button on a my files row) -->
+  <div id="edit-parcel-modal" class="modal" hidden>
+    <div class="modal-backdrop" data-action="edit-parcel-close"></div>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="edit-parcel-title">
+      <button class="card-close ghost icon-btn ripple-surface" type="button" data-action="edit-parcel-close" data-i18n-label="close" aria-label="Close">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+      <h2 id="edit-parcel-title" data-i18n="edit-parcel-title">编辑包裹</h2>
+      <p class="card-sub" id="edit-parcel-meta"></p>
+
+      <label class="field">
+        <svg class="icon field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        <input type="number" id="edit-expiry-hours" min="1" max="168" step="1" inputmode="numeric" placeholder=" ">
+        <span class="field-label" data-i18n="edit-expiry">有效期 (小时)</span>
+      </label>
+      <label class="field">
+        <svg class="icon field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>
+        <input type="number" id="edit-downloads" min="1" max="999" step="1" inputmode="numeric" placeholder=" ">
+        <span class="field-label" data-i18n="edit-downloads">剩余下载次数</span>
+      </label>
+
+      <p class="card-error" id="edit-parcel-err" role="alert" hidden></p>
+      <button id="btn-edit-parcel-save" class="cta cta-primary card-cta ripple-surface" type="button">
+        <span data-i18n="btn-save">保存</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Generic confirm modal (delete parcel) -->
+  <div id="confirm-modal" class="modal" hidden>
+    <div class="modal-backdrop" data-action="confirm-cancel"></div>
+    <div class="modal-card" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" aria-describedby="confirm-message">
+      <button class="card-close ghost icon-btn ripple-surface" type="button" data-action="confirm-cancel" data-i18n-label="close" aria-label="Close">
+        <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+      <h2 id="confirm-title"></h2>
+      <p class="card-sub" id="confirm-message"></p>
+      <div class="confirm-actions">
+        <button class="cta cta-tonal ripple-surface" type="button" data-action="confirm-cancel">
+          <span data-i18n="btn-cancel">取消</span>
+        </button>
+        <button id="btn-confirm-ok" class="cta cta-primary ripple-surface" type="button">
+          <span id="confirm-ok-label" data-i18n="btn-confirm">确定</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <footer class="site-footer">
+    <span class="foot-line"><span>© <span id="year"></span></span><span data-site-name-text>open.drop</span><span id="footer-storage" class="tnum"></span></span>
+  </footer>
+</body>
+</html>
